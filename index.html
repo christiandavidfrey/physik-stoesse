@@ -41,31 +41,40 @@ a{color:var(--accent)}
 .page{max-width:1680px;margin:0 auto;padding:16px 40px}
 @media (max-width:640px){.page{padding:12px 16px}}
 
-/* Kopf */
-.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 36px;padding:28px 0 40px}
-.top h1{margin:0;font:700 50px/1 Calibri, Carlito, "Segoe UI", sans-serif;letter-spacing:-.01em}
-.top p{margin:0;color:var(--ink-2);max-width:60ch}
-.facts{display:flex;flex-wrap:wrap;gap:4px 18px;margin-left:auto;color:var(--muted)}
-.facts b{color:var(--ink);font-weight:700}
-.facts .warn b{color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
-
-/* Raster */
-.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:76px 64px;margin-top:16px}
-.panel{min-width:0;border-top:2px solid var(--ink);padding-top:16px}
-.s4{grid-column:span 4}.s8{grid-column:span 8}.s12{grid-column:span 12}
-@media (max-width:1100px){.grid{grid-template-columns:1fr}.s4,.s8,.s12{grid-column:auto}}
-.panel h2{margin:0 0 18px;font:700 25px/1.1 Calibri, Carlito, "Segoe UI", sans-serif;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.panel h2 small{font-weight:400;color:var(--muted);font-size:14px}
-.sub{color:var(--muted);font-size:13.5px;margin:0 0 8px}
+/* Lesefluss */
+.col{max-width:680px;margin-left:auto;margin-right:auto;padding:0 24px}
+.mid{max-width:960px;margin:40px auto 0;padding:0 24px}
+.wide{max-width:1280px;margin:44px auto 0;padding:0 24px}
+figure{display:block}
+section{padding:120px 0 0}
+section + section{margin-top:40px}
+section > .col:first-child{border-top:1px solid var(--ink);padding-top:28px}
+.masthead{padding-top:96px;padding-bottom:24px}
+.kicker{margin:0 0 14px;color:var(--muted);font-size:15px;letter-spacing:.02em}
+.masthead h1{margin:0;font:700 64px/1.02 Calibri, Carlito, "Segoe UI", sans-serif;letter-spacing:-.015em}
+@media (max-width:640px){.masthead h1{font-size:44px}.masthead{padding-top:56px}section{padding-top:80px}}
+.deck{font-size:22px;line-height:1.45;color:var(--ink-2);margin:22px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 22px;margin:28px 0 0;color:var(--muted);font-size:15px}
+.meta b{color:var(--ink);font-weight:700}
+.meta .warn b{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+h2{margin:0 0 16px;font:700 38px/1.1 Calibri, Carlito, "Segoe UI", sans-serif;letter-spacing:-.01em}
+h3{margin:0 0 12px;font:700 26px/1.15 Calibri, Carlito, "Segoe UI", sans-serif}
+.lede{font-size:19px;line-height:1.6;color:var(--ink-2);margin:0}
+.sub{color:var(--muted);font-size:15px;margin:18px 0 0}
+.col-note{font-size:14px;color:var(--muted);margin:18px 0 0;max-width:680px;line-height:1.5}
+.dbar{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:end;margin-top:20px}
+.tl-slider{flex:1;min-width:260px;margin-top:0}
 
 /* Formeln */
-.formulas .f{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;border-top:1px solid var(--rule);padding:8px 0}
+.formulas{margin-top:28px}
+.formulas .f{display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;border-top:1px solid var(--rule);padding:8px 0}
 .formulas .f:first-child{border-top:0}
 .formulas .f span{color:var(--ink-2);font-weight:700}
 .formula{overflow-x:auto;overflow-y:hidden}
 .formula .katex-display{margin:.2em 0}
-.formula .katex-display>.katex{text-align:left;font-size:1.02em}
-.types-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:20px}
+.formula .katex-display>.katex{text-align:left;font-size:1.15em}
+.types-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:32px}
+@media (max-width:640px){.types-legend{grid-template-columns:1fr}}
 .tl{border-left:3px solid;padding:2px 0 2px 8px;font-size:13px;line-height:1.35;color:var(--ink-2)}
 .tl b{display:block;color:var(--ink);font-size:15px}
 
@@ -77,9 +86,12 @@ a{color:var(--accent)}
 .btn[aria-pressed="true"] small{color:inherit;opacity:.7}
 .btn.play{background:var(--ink);border-color:var(--ink);color:var(--raised)}
 .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;flex:none;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 35%,transparent)}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
+figure > .row:first-child{margin-top:0}
 .ctl{display:grid;gap:16px 28px;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:18px}
 .ctl.one{grid-template-columns:1fr}
+.ctl.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:640px){.ctl.three{grid-template-columns:1fr}}
 @media (max-width:640px){.ctl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ctl label{display:block;color:var(--ink-2);font-size:14px}
 .ctl output{float:right;color:var(--ink);font-weight:700}
@@ -87,7 +99,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 0}
 select{font:400 14px Calibri, Carlito, "Segoe UI", sans-serif;color:var(--ink);background:var(--raised);border:1px solid var(--rule);border-radius:5px;padding:5px 6px}
 
 /* Kennzahlen */
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-top:24px}
 @media (max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .fig{background:var(--raised);padding:12px 16px 12px 0}
 .fig div{color:var(--muted);font-size:13px;line-height:1.25}
@@ -108,11 +120,11 @@ canvas.track{display:block;width:100%;height:230px}
 @media (max-width:900px){.dlayout{grid-template-columns:1fr}}
 .dside .kpis{grid-template-columns:1fr 1fr}
 .dside .fig{padding-left:0}
-.stack{display:grid;gap:8px}
+.stack{display:grid;gap:10px;margin-top:28px}
 .slabel{font-weight:700;font-size:14px;color:var(--ink-2)}
 .box{position:relative}
 .stack .box{touch-action:pan-y}
-.charts2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px}
+.charts2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px;margin-top:32px}
 @media (max-width:900px){.charts2{grid-template-columns:1fr}}
 
 /* Tabelle */
@@ -128,7 +140,7 @@ tbody tr:last-child td{border-bottom:0}
 #table th:nth-child(-n+3),#table td:nth-child(-n+3){text-align:left}
 th.calc,td.calc{background:color-mix(in srgb,var(--ink) 4%,transparent)}
 td .swatch{margin-right:6px}
-.callout{font-size:13.5px;color:var(--ink-2);border-left:3px solid var(--warn);padding:4px 10px;margin:0 0 10px}
+.callout{font-size:16px;color:var(--ink-2);border-left:3px solid var(--ink);padding:4px 14px;margin:24px 0 0}
 .callout b{color:var(--ink)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--ink-2);margin-bottom:4px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
@@ -136,26 +148,28 @@ td .swatch{margin-right:6px}
 .note{font-size:14px;color:var(--muted);margin:14px 0 0;line-height:1.5}
 .run{font:400 14px Calibri, Carlito, "Segoe UI", sans-serif;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:5px;padding:4px 9px;cursor:pointer}
 .run[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
-footer{color:var(--muted);font-size:13px;padding:40px 0 8px;margin-top:40px;border-top:1px solid var(--rule)}
+footer{color:var(--muted);font-size:14px;padding-top:28px;padding-bottom:64px;margin-top:140px;border-top:1px solid var(--rule)}
 </style>
 </head>
 <body>
-<div class="page">
 
-<header class="top">
+<header class="masthead col">
+  <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
-  <p>Zusatz zum Bericht von Praktikum 9: alle Messdaten, interaktiv ausgewertet.</p>
-  <div class="facts">
-    <span>Messungen <b>13</b></span><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span>
-  </div>
+  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Von der Simulation des Aufbaus über die Ableitung von Ort zu Beschleunigung bis zum Federmodell.</p>
+  <p class="meta">Messungen <b>13</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
 </header>
 
-<main class="grid">
+<main>
 
-  <section class="panel s8" id="aufbau">
-    <h2>Versuchsaufbau <small>simuliert mit deinen Eingaben</small></h2>
+<section id="aufbau">
+  <div class="col">
+    <h2>Versuchsaufbau</h2>
+    <p class="lede">Zwei Wagen auf einer Schiene, links die Ultraschallsensoren. Wähle Puffer, Massen und Geschwindigkeiten und starte den Stoss. Die Simulation rechnet mit idealen Stössen.</p>
+  </div>
+  <figure class="wide">
     <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Der Stoss wird mit den eingestellten Werten simuliert."></canvas>
-    <div class="row" role="group" aria-label="Stossart" style="margin-top:16px">
+    <div class="row" role="group" aria-label="Stossart">
       <button class="btn" data-type="0"><span class="swatch" style="background:var(--c-el)"></span>Elastisch <small>Feder</small></button>
       <button class="btn" data-type="1"><span class="swatch" style="background:var(--c-in)"></span>Teilelastisch <small>Schaumstoff</small></button>
       <button class="btn" data-type="2"><span class="swatch" style="background:var(--c-vi)"></span>Inelastisch <small>Klett</small></button>
@@ -173,10 +187,13 @@ footer{color:var(--muted);font-size:13px;padding:40px 0 8px;margin-top:40px;bord
       <div class="fig"><div>Energie erhalten / umgewandelt</div><strong><span class="v" id="r_keep"></span> <span>/</span> <span class="v" id="r_loss"></span></strong><div class="ebar" aria-hidden="true"><i class="kept" id="r_kept"></i><i class="lost" id="r_lost"></i></div></div>
       <div class="fig"><div>Stosszahl e</div><strong id="r_e"></strong></div>
     </div>
-  </section>
+  </figure>
+</section>
 
-  <section class="panel s4" id="theorie">
+<section id="theorie">
+  <div class="col">
     <h2>Grundlagen</h2>
+    <p class="lede">Vier Beziehungen tragen die ganze Auswertung. Wagen 1 ist immer der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
     <div class="formulas">
       <div class="f"><span>Impuls</span><div class="formula" data-tex="m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'"></div></div>
       <div class="f"><span>Stosszahl</span><div class="formula" data-tex="e = -\frac{v_1' - v_2'}{v_1 - v_2}"></div></div>
@@ -184,35 +201,42 @@ footer{color:var(--muted);font-size:13px;padding:40px 0 8px;margin-top:40px;bord
       <div class="f"><span>Ableitungen</span><div class="formula" data-tex="v = \frac{\mathrm dx}{\mathrm dt},\quad a = \frac{\mathrm dv}{\mathrm dt}"></div></div>
     </div>
     <div class="types-legend">
-      <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>Feder, e ≈ 1, E<sub>kin</sub> bleibt</div>
+      <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>Feder, e ≈ 1, E<sub>kin</sub> bleibt erhalten</div>
       <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>Schaumstoff, 0 &lt; e &lt; 1</div>
-      <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>Klett, e = 0, fahren gemeinsam</div>
+      <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>Klett, e = 0, fahren gemeinsam weiter</div>
     </div>
-    <p class="note">Wagen 1 ist immer der stossende Wagen (fährt in −x), Wagen 2 der gestossene. Beide Sensoren messen von links. Aufbauten je Stossart: leicht→schwer, schwer→leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander.</p>
-  </section>
+  </div>
+</section>
 
-  <section class="panel s12" id="ableitung">
-    <h2>Von x(t) zu v(t) und a(t) <small>Maus oder Regler über die Zeitachse: Tangente an x(t) gibt v, Tangente an v(t) gibt a</small></h2>
-    <div class="dlayout">
-      <div class="dside">
-        <div class="row" id="dTabs" role="group" aria-label="Beispielmessung wählen"></div>
-        <div class="row" style="margin-top:8px"><span class="slabel">Wagen</span><button class="btn" data-cart="1" aria-pressed="true">Wagen 1</button><button class="btn" data-cart="2" aria-pressed="false">Wagen 2</button></div>
-        <div class="ctl one"><label>Zeitpunkt t <output id="o_dt"></output><input type="range" id="dT" min="0" max="5" step="0.005" value="1"></label></div>
-        <p class="sub" id="dSub" style="margin-top:8px"></p>
-        <div class="kpis" id="dFigures"></div>
-        <p class="note">Punkte: Rohdaten. Linien: Ableitungen über eine lokale Parabel (0,15 s). Grau: Stoss, Fläche unter a(t) = Δv. Wagen 2 ist unter 0,20 m nicht messbar.</p>
-      </div>
-      <div class="stack">
-        <div class="slabel">Ort x(t)</div><div class="box" style="height:220px"><canvas id="chX" role="img" aria-label="Ort gegen Zeit mit Tangente"></canvas></div>
-        <div class="slabel">Geschwindigkeit v(t)</div><div class="box" style="height:190px"><canvas id="chV" role="img" aria-label="Geschwindigkeit gegen Zeit mit Tangente"></canvas></div>
-        <div class="slabel">Beschleunigung a(t)</div><div class="box" style="height:190px"><canvas id="chA" role="img" aria-label="Beschleunigung gegen Zeit"></canvas></div>
-      </div>
+<section id="ableitung">
+  <div class="col">
+    <h2>Von x(t) zu v(t) und a(t)</h2>
+    <p class="lede">Die Sensoren liefern nur den Ort. Die Geschwindigkeit ist die Steigung von x(t), die Beschleunigung die Steigung von v(t). Fahr mit der Maus oder dem Regler über die Zeitachse und lies die Tangenten ab.</p>
+  </div>
+  <figure class="wide">
+    <div class="row" id="dTabs" role="group" aria-label="Beispielmessung wählen"></div>
+    <div class="dbar">
+      <div class="row"><span class="slabel">Wagen</span><button class="btn" data-cart="1" aria-pressed="true">Wagen 1</button><button class="btn" data-cart="2" aria-pressed="false">Wagen 2</button></div>
+      <div class="ctl one tl-slider"><label>Zeitpunkt t <output id="o_dt"></output><input type="range" id="dT" min="0" max="5" step="0.005" value="1"></label></div>
     </div>
-  </section>
+    <p class="sub" id="dSub"></p>
+    <div class="kpis" id="dFigures"></div>
+    <div class="stack">
+      <div class="slabel">Ort x(t)</div><div class="box" style="height:240px"><canvas id="chX" role="img" aria-label="Ort gegen Zeit mit Tangente"></canvas></div>
+      <div class="slabel">Geschwindigkeit v(t)</div><div class="box" style="height:210px"><canvas id="chV" role="img" aria-label="Geschwindigkeit gegen Zeit mit Tangente"></canvas></div>
+      <div class="slabel">Beschleunigung a(t)</div><div class="box" style="height:210px"><canvas id="chA" role="img" aria-label="Beschleunigung gegen Zeit"></canvas></div>
+    </div>
+    <figcaption class="col-note">Punkte: Rohdaten. Linien: Ableitungen über eine lokale Parabel (0,15 s). Grau hinterlegt ist der Stoss, die Fläche unter a(t) dort entspricht Δv. Wagen 2 ist unter 0,20 m nicht messbar.</figcaption>
+  </figure>
+</section>
 
-  <section class="panel s8" id="auswertung">
-    <h2>Alle Messungen <small>Zeile anklicken: Messung oben in x, v, a öffnen</small></h2>
+<section id="auswertung">
+  <div class="col">
+    <h2>Alle Messungen</h2>
+    <p class="lede">Für jede Stossart vier Aufbauten: leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken öffnet die Messung oben bei x, v und a.</p>
     <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
+  </div>
+  <figure class="wide">
     <div class="tablewrap"><table id="table">
       <thead><tr>
         <th>Nr.</th><th>Stossart</th><th>Aufbau</th>
@@ -222,44 +246,46 @@ footer{color:var(--muted);font-size:13px;padding:40px 0 8px;margin-top:40px;bord
         <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th><th class="calc">ΔE<small>%</small></th>
       </tr></thead><tbody></tbody>
     </table></div>
-    <p class="note">Geschwindigkeiten aus linearen Fits vor und nach dem Stoss. m₂/m₁ = −Δv₁/Δv₂ ist das Massenverhältnis, das die Impulserhaltung verlangt.</p>
-  </section>
+    <figcaption class="col-note">Geschwindigkeiten aus linearen Fits vor und nach dem Stoss. Hinterlegte Spalten sind berechnet.</figcaption>
+  </figure>
 
-  <section class="panel s4">
+  <div class="col" style="margin-top:96px">
+    <h3>Massenverhältnis aus der Impulserhaltung</h3>
+    <p class="lede">Ohne gewogene Massen lässt sich trotzdem prüfen, ob die Messungen zur Impulserhaltung passen: Sie verlangt m₂/m₁ = −Δv₁/Δv₂. Die Punkte sollten auf den Linien 2, 1 und ½ ihres Aufbaus liegen.</p>
+  </div>
+  <figure class="mid">
     <div class="legend" id="lgTypes"></div>
-    <h2 style="margin-top:6px">Massenverhältnis aus Impulserhaltung <small>erwartet 2, 1 und ½</small></h2>
-    <p class="sub">m₂/m₁ = −Δv₁/Δv₂ je Messung. Liegt ein Punkt auf der Linie seines Aufbaus, passt die Messung zur Impulserhaltung.</p>
-    <div class="box" style="height:400px"><canvas id="chM" role="img" aria-label="Massenverhältnis je Messung"></canvas></div>
-  </section>
+    <div class="box" style="height:380px"><canvas id="chM" role="img" aria-label="Massenverhältnis je Messung"></canvas></div>
+  </figure>
 
-  <section class="panel s12" id="pFigure">
-    <h2>Impuls vor und nach dem Stoss <small id="pSub"></small></h2>
-    <div class="box" style="height:260px"><canvas id="chP" role="img" aria-label="Impuls vorher gegen nachher"></canvas></div>
-  </section>
+  <div id="pFigure">
+    <div class="col" style="margin-top:96px"><h3>Impuls vor und nach dem Stoss</h3><p class="lede" id="pSub"></p></div>
+    <figure class="mid"><div class="box" style="height:340px"><canvas id="chP" role="img" aria-label="Impuls vorher gegen nachher"></canvas></div></figure>
+  </div>
+</section>
 
-  <section class="panel s12" id="modell">
-    <h2>Federmodell <small>Nachbau des Berkeley-Madonna-Modells: F = k·Δ bei Berührung, sonst 0</small></h2>
-    <div class="dlayout">
-      <div class="dside">
-        <div class="row" id="modelRuns"></div>
-        <div class="ctl one">
-          <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
-          <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.1" max="1.5" step="0.01" value="0.25"></label>
-          <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.1" max="1.5" step="0.01" value="0.5"></label>
-        </div>
-        <p class="note">Start aus der Messung. Mit k = 1000 N/m dauert der Stoss im Modell nur Hundertstelsekunden, gemessen sind rund 0,2 s: k verkleinern, bis die Kurven passen.</p>
-        <p class="note missing" id="modelMassNote">Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
-      </div>
-      <div class="charts2">
-        <div><div class="legend" id="lgMX"></div><div class="box" style="height:270px"><canvas id="chMX" role="img" aria-label="Modell und Messung, Ort gegen Zeit"></canvas></div></div>
-        <div><div class="legend" id="lgME"></div><div class="box" style="height:270px"><canvas id="chME" role="img" aria-label="Kinetische Energie im Modell gegen Zeit"></canvas></div></div>
-      </div>
+<section id="modell">
+  <div class="col">
+    <h2>Federmodell</h2>
+    <p class="lede">Nachbau unseres Berkeley-Madonna-Modells: Berühren sich die Wagen, drückt die Feder mit F = k·Δ, sonst wirkt keine Kraft. Start aus der gewählten Messung. Mit k = 1000 N/m dauert der Stoss im Modell nur Hundertstelsekunden, gemessen sind rund 0,2 s. Verkleinere k, bis die Kurven passen.</p>
+  </div>
+  <figure class="wide">
+    <div class="row" id="modelRuns"></div>
+    <div class="ctl three">
+      <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
+      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.1" max="1.5" step="0.01" value="0.25"></label>
+      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.1" max="1.5" step="0.01" value="0.5"></label>
     </div>
-  </section>
+    <p class="note missing" id="modelMassNote">Die Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
+    <div class="charts2">
+      <div><div class="slabel">Ort: Modell und Messung</div><div class="legend" id="lgMX"></div><div class="box" style="height:300px"><canvas id="chMX" role="img" aria-label="Modell und Messung, Ort gegen Zeit"></canvas></div></div>
+      <div><div class="slabel">Kinetische Energie im Modell</div><div class="legend" id="lgME"></div><div class="box" style="height:300px"><canvas id="chME" role="img" aria-label="Kinetische Energie im Modell gegen Zeit"></canvas></div></div>
+    </div>
+  </figure>
+</section>
 
 </main>
-<footer>Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</footer>
-</div>
+<footer class="col">Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</footer>
 
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/chart.umd.min.js"></script>
