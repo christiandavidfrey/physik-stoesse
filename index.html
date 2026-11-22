@@ -150,7 +150,13 @@ tbody td{border-bottom:1px solid var(--rule)}
 tbody tr:last-child td{border-bottom:0}
 #table tbody tr{cursor:pointer}
 #table tbody tr:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
-#table th:nth-child(-n+3),#table td:nth-child(-n+3){text-align:left}
+#table th:nth-child(-n+2),#table td:nth-child(-n+2){text-align:left}
+#table tbody tr.grp{cursor:default}
+#table tbody tr.grp:hover{background:none}
+#table tr.grp th{text-align:left;padding:44px 12px 12px;border-bottom:1.5px solid var(--ink);font-weight:700;font-size:22px;color:var(--ink);white-space:normal}
+#table tr.grp th small{display:inline;margin-left:12px;font-size:14px;font-weight:400;color:var(--muted)}
+#table tr.grp th .swatch{width:12px;height:12px;margin-right:10px}
+#table tbody tr[data-run] td:last-child::after{content:"›";margin-left:10px;color:var(--muted)}
 th.calc,td.calc{background:color-mix(in srgb,var(--ink) 4%,transparent)}
 td .swatch{margin-right:6px}
 .callout{font-size:16px;color:var(--ink-2);border-left:3px solid var(--ink);padding:6px 16px;margin:40px 0 0}
@@ -172,7 +178,15 @@ td .swatch{margin-right:6px}
 .pick-info b{color:var(--ink);margin-right:6px}
 @media (max-width:640px){.picker-in{padding:10px 16px 2px;flex-wrap:nowrap}.pick-groups{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.pick-g{flex-wrap:nowrap}.pick-info{padding:2px 16px 10px;font-size:13px}}
 #table tbody tr.sel td{background:color-mix(in srgb,var(--ink) 10%,transparent);font-weight:700}
-html{scroll-padding-top:120px}
+html{scroll-padding-top:90px}
+.dhead{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--raised) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);box-shadow:0 6px 18px -12px rgba(0,0,0,.35)}
+.dhead-in{max-width:1280px;margin:0 auto;padding:12px 24px;display:flex;gap:12px 24px;align-items:center}
+.dhead-t{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline}
+.dhead-t b{font-size:20px}
+.dhead-t span{font-size:14px;color:var(--ink-2)}
+.dhead-nav{display:flex;gap:6px}
+@media (max-width:640px){.dhead-in{padding:10px 16px;flex-wrap:wrap}.dhead-t{order:3;flex-basis:100%}.dhead-nav{margin-left:auto}}
+#viewDetail > section:first-of-type{padding-top:110px}
 .masthead{padding-bottom:40px}
 #auswertung{padding-top:96px}
 @media (max-width:640px){.formulas .f{grid-template-columns:1fr}}
@@ -198,23 +212,24 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <header class="masthead dark"><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
-  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Wähle unten eine Messung aus der Tabelle, und die ganze Seite folgt: der Stoss wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
+  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
   <p class="meta">Messungen <b>13</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
 </div></header>
 
 
 <main>
+<div id="viewOverview">
 
 <section id="auswertung" class="dark">
   <div class="col">
     <h2>Unsere Stösse</h2>
-    <p class="lede">13 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken, und die ganze Seite zeigt diesen Stoss.</p>
+    <p class="lede">13 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe, Ableitung und Federmodell; über „Alle Stösse“ geht es zurück.</p>
     <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
   </div>
   <figure class="wide">
     <div class="tablewrap"><table id="table">
       <thead><tr>
-        <th>Nr.</th><th>Stossart</th><th>Aufbau</th>
+        <th>Nr.</th><th>Aufbau</th>
         <th>v₁<small>m/s</small></th><th>v₂<small>m/s</small></th><th>v₁′<small>m/s</small></th><th>v₂′<small>m/s</small></th>
         <th class="calc">e<small>&nbsp;</small></th><th class="calc">m₂/m₁<small>aus Δv</small></th>
         <th>m₁<small>kg</small></th><th>m₂<small>kg</small></th>
@@ -225,18 +240,35 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </figure>
 </section>
 
-<nav class="picker" aria-label="Messung wählen">
-  <div class="picker-in">
-    <span class="pick-l">Messung</span>
-    <div class="pick-groups" id="pickRuns"></div>
-  </div>
-  <p class="pick-info" id="pickInfo"></p>
-</nav>
 
+<section id="ueberblick">
+  <div class="col">
+    <h2>Überblick</h2>
+    <p class="lede">Alle Messungen auf einen Blick: Liegen die Massenverhältnisse aus der Impulserhaltung auf den Linien 2, 1 und ½ ihres Aufbaus?</p>
+  </div>
+  <figure class="mid">
+    <div class="legend" id="lgTypes"></div>
+    <div class="box" style="height:380px"><canvas id="chM" role="img" aria-label="Massenverhältnis je Messung"></canvas></div>
+  </figure>
+  <div id="pFigure">
+    <div class="col" style="margin-top:120px"><h3>Impuls vor und nach dem Stoss</h3><p class="lede" id="pSub"></p></div>
+    <figure class="mid"><div class="box" style="height:340px"><canvas id="chP" role="img" aria-label="Impuls vorher gegen nachher"></canvas></div></figure>
+  </div>
+</section>
+</div>
+
+<div id="viewDetail" hidden>
+<nav class="dhead" aria-label="Stoss-Navigation">
+  <div class="dhead-in">
+    <button class="btn" id="backBtn">← Alle Stösse</button>
+    <div class="dhead-t"><b id="dhTitle"></b><span id="dhInfo"></span></div>
+    <div class="dhead-nav"><button class="btn" id="prevBtn" aria-label="Vorheriger Stoss"></button><button class="btn" id="nextBtn" aria-label="Nächster Stoss"></button></div>
+  </div>
+</nav>
 <section id="aufbau" class="tint">
   <div class="col">
     <h2>Der Stoss</h2>
-    <p class="lede">Die gewählte Messung, abgespielt aus den geglätteten Messwerten. Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</p>
+    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</p>
     <details class="more">
       <summary>Versuchsaufbau</summary>
       <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Wagen 1 ist der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
@@ -341,20 +373,8 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </figure>
 </section>
 
-<section id="ueberblick">
-  <div class="col">
-    <h2>Überblick</h2>
-    <p class="lede">Alle Messungen auf einen Blick: Liegen die Massenverhältnisse aus der Impulserhaltung auf den Linien 2, 1 und ½ ihres Aufbaus?</p>
-  </div>
-  <figure class="mid">
-    <div class="legend" id="lgTypes"></div>
-    <div class="box" style="height:380px"><canvas id="chM" role="img" aria-label="Massenverhältnis je Messung"></canvas></div>
-  </figure>
-  <div id="pFigure">
-    <div class="col" style="margin-top:120px"><h3>Impuls vor und nach dem Stoss</h3><p class="lede" id="pSub"></p></div>
-    <figure class="mid"><div class="box" style="height:340px"><canvas id="chP" role="img" aria-label="Impuls vorher gegen nachher"></canvas></div></figure>
-  </div>
-</section>
+
+</div>
 </main>
 <footer class="dark black"><div class="foot-in">Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</div></footer>
 

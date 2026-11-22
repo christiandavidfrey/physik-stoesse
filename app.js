@@ -154,8 +154,14 @@ const ani = { run: null, raw: null, model: null, tA: 0, tB: 0, start: 0, speed: 
 function setupLoad(run, raw) {
   Object.assign(ani, { run, raw, tA: Math.max(0, run.tc - 1.0), tB: Math.min(raw.t[raw.t.length - 1], run.tc + 1.4) });
   fillSetupFigures();
-  playSetup(!reduceMotion);
+  // erst abspielen, wenn die Grafik im Bild ist
+  ani.pending = !reduceMotion; playSetup(false); ani.frozen = reduceMotion ? ani.tB : ani.tA;
+  if (ani.pending && ani.visible) { ani.pending = false; playSetup(); }
 }
+new IntersectionObserver(es => es.forEach(e => {
+  ani.visible = e.isIntersecting;
+  if (ani.visible && ani.pending) { ani.pending = false; playSetup(); }
+}), { threshold: 0.6 }).observe($('setupCanvas'));
 function playSetup(on = true) { ani.start = performance.now(); ani.playing = on; ani.frozen = on ? ani.tA : ani.tB; }
 function setupTime() {
   if (!ani.playing) return ani.frozen;
@@ -181,7 +187,7 @@ $('sPlay').addEventListener('click', () => playSetup());
   const canvas = $('setupCanvas'), ctx = canvas.getContext('2d');
   let W = 0, H = 0;
   function resize() { const r = canvas.getBoundingClientRect(), d = devicePixelRatio || 1; W = r.width; H = r.height; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
-  resize(); addEventListener('resize', resize);
+  resize(); new ResizeObserver(resize).observe(canvas);
   const font = (w, s) => `${w} ${s}px Calibri, Carlito, sans-serif`;
   function arrow(x0, x1, y, col) {
     ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
@@ -189,6 +195,7 @@ $('sPlay').addEventListener('click', () => playSetup());
     const d = Math.sign(x1 - x0) || 1; ctx.beginPath(); ctx.moveTo(x1 + d * 2, y); ctx.lineTo(x1 - d * 7, y - 5); ctx.lineTo(x1 - d * 7, y + 5); ctx.fill();
   }
   function draw() {
+    if ($('viewDetail').hidden) return;
     const run = ani.run, raw = ani.raw; if (!run || !raw || !W) return;
     const k = Math.min(1, H / 250), padL = 64 * Math.max(.7, k), padR = 64 * Math.max(.7, k), sc = (W - padL - padR) / SIM.L, X = x => padL + x * sc;
     const railY = H - 52 * k, bodyH = 30 * k, wr = 5 * k, bodyTop = railY - 2 * wr - bodyH;
@@ -321,15 +328,23 @@ const deNum = d => v => fmt(v, d);
 let RUNS = [], modelRun = null;
 
 // ===================== Versuchsmatrix & Tabelle =====================
+let ORDER = [];   // Tabellenreihenfolge: nach Stossart, dann Aufbau
 function renderTable() {
   const missing = '<span class="missing">fehlt</span>';
-  $('table').querySelector('tbody').innerHTML = RUNS.map(r => `<tr data-run="${r.id}">
-    <td>${r.id}</td><td><span class="swatch" style="background:var(${r.T.color})"></span>${r.T.label}</td><td>${r.aufbau}</td>
+  ORDER = [...RUNS].sort((a, b) => TYPES.indexOf(a.T) - TYPES.indexOf(b.T) || AUFBAU.indexOf(a.aufbau) - AUFBAU.indexOf(b.aufbau) || parseFloat(a.id) - parseFloat(b.id));
+  $('table').querySelector('tbody').innerHTML = TYPES.map(T => {
+    const rs = ORDER.filter(r => r.T === T); if (!rs.length) return '';
+    return `<tr class="grp"><th colspan="13"><span class="swatch" style="background:var(${T.color})"></span>${T.label}<small>beide Wagen mit ${T.puffer}, ${rs.length} Messungen</small></th></tr>` + rs.map(r => `<tr data-run="${r.id}" tabindex="0" title="Stoss ${r.id} öffnen">
+    <td>${r.id}</td><td>${r.aufbau}</td>
     <td>${fmt(r.v1)}</td><td>${fmt(r.v2)}</td><td>${fmt(r.u1)}</td><td>${fmt(r.u2)}</td>
     <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
     <td>${ok(r.m1) ? fmt(r.m1) : missing}</td><td>${ok(r.m2) ? fmt(r.m2) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
-  $('table').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => selectRun(tr.dataset.run, true)));
+  }).join('');
+  $('table').querySelectorAll('tbody tr[data-run]').forEach(tr => {
+    tr.addEventListener('click', () => openRun(tr.dataset.run));
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRun(tr.dataset.run); } });
+  });
   $('massNote').style.display = RUNS.every(r => r.hasMass) ? 'none' : '';
 }
 
@@ -510,23 +525,34 @@ function renderModel() {
 }
 [mk, mc, mm1, mm2].forEach(el => el.addEventListener('input', renderModel));
 
-// ===================== Auswahl: eine Messung für die ganze Seite =====================
-let SEL = null;
-function renderPicker() {
-  $('pickRuns').innerHTML = TYPES.map(T => {
-    const rs = RUNS.filter(r => r.T === T); if (!rs.length) return '';
-    return `<span class="pick-g"><span class="pick-t"><span class="swatch" style="background:var(${T.color})"></span>${T.label}</span>${rs.map(r => `<button class="run" data-sel="${r.id}" aria-pressed="false" title="${AUFBAU_TEXT[r.aufbau] || r.aufbau}">${r.id}</button>`).join('')}</span>`;
-  }).join('');
-  $('pickRuns').querySelectorAll('[data-sel]').forEach(b => b.addEventListener('click', () => selectRun(b.dataset.sel)));
+// ===================== Ansichten: Tabelle oder ein einzelner Stoss =====================
+let SEL = null, lastRun = null;
+function openRun(id) { history.pushState(null, '', '#m' + id); route(true); }
+function showTable() { history.pushState(null, '', location.pathname + location.search); route(true); }
+function route(nav) {
+  const id = (location.hash.match(/^#m([\d.]+)$/) || [])[1], run = RUNS.find(r => r.id === id);
+  $('viewOverview').hidden = !!run; $('viewDetail').hidden = !run;
+  if (run) {
+    selectRun(run.id);
+    if (nav) $('viewDetail').scrollIntoView({ block: 'start' });
+  } else {
+    ani.playing = false;
+    if (nav) {
+      const tr = lastRun && document.querySelector(`#table tr[data-run="${lastRun}"]`);
+      if (tr) { tr.scrollIntoView({ block: 'center' }); tr.focus({ preventScroll: true }); } else $('viewOverview').scrollIntoView({ block: 'start' });
+    }
+  }
 }
-async function selectRun(id, scroll) {
+addEventListener('popstate', () => route(true));
+$('backBtn').addEventListener('click', showTable);
+async function selectRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
-  SEL = run;
-  document.querySelectorAll('[data-sel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sel === id));
-  document.querySelectorAll('#table tbody tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.run === id));
-  $('pickInfo').innerHTML = `<b>Messung ${run.id}</b> ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${fmt(run.m1)} kg, m₂ = ${fmt(run.m2)} kg` : '<span class="missing">Massen fehlen noch</span>'}`;
-  try { history.replaceState(null, '', '#m' + run.id); } catch (_) {}
-  if (scroll) $('aufbau').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  SEL = run; lastRun = id;
+  const k = ORDER.indexOf(run), prev = ORDER[k - 1], next = ORDER[k + 1];
+  $('dhTitle').textContent = `Stoss ${run.id}`;
+  $('dhInfo').innerHTML = `${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${fmt(run.m1)} kg, m₂ = ${fmt(run.m2)} kg` : '<span class="missing">Massen fehlen noch</span>'}`;
+  const nb = (b, r, txt) => { b.disabled = !r; b.textContent = r ? txt(r.id) : txt('').trim(); b.onclick = r ? () => { history.replaceState(null, '', '#m' + r.id); selectRun(r.id); } : null; };
+  nb($('prevBtn'), prev, i => `‹ ${i}`); nb($('nextBtn'), next, i => `${i} ›`);
   const raw = await loadRaw(run); if (SEL !== run) return;
   ani.model = null; ani.run = run; ani.raw = raw;
   await selectModelRun(id);
@@ -543,11 +569,10 @@ function renderAll() {
 fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
   .then(text => {
     RUNS = parseRuns(text);
-    renderTable(); renderPicker();
-    const fromHash = (location.hash.match(/^#m([\d.]+)$/) || [])[1];
+    renderTable();
     return document.fonts.ready.then(() => {
       renderOverviewCharts();
-      selectRun(RUNS.some(r => r.id === fromHash) ? fromHash : '3');
+      route(false);
     });
   })
   .catch(err => {
