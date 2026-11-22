@@ -211,7 +211,7 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
     const t = reduceMotion ? 0 : (performance.now() - simT0) / 1000;
     const i = Math.min(simTraj.length - 1, Math.floor(t * 120)), p = simTraj[i];
     const muted = css('--muted'), ink = css('--ink'), ink2 = css('--ink-2'), rail = css('--rail'), raised = css('--raised');
-    const col1 = css(TYPES[simType].color), col2 = css('--w2');
+    const col1 = css('--ink'), col2 = css('--w2');
     ctx.clearRect(0, 0, W, H);
     // Schiene, Anschläge, Massstab
     ctx.fillStyle = rail; ctx.fillRect(X(0), railY, SIM.L * sc, 7 * k);
@@ -333,12 +333,6 @@ function renderOverviewCharts() {
   const labels = order.map(r => 'Nr. ' + r.id);
   const title = i => { const r = order[i]; return `Messung ${r.id}, ${r.T.label.toLowerCase()}`; };
 
-  chart('chE', { type: 'bar',
-    data: { labels, datasets: [{ data: order.map(r => Math.max(r.e, 0)), backgroundColor: order.map(r => css(r.T.color)), borderRadius: { topRight: 4, bottomRight: 4 }, borderSkipped: 'start', minBarLength: 3, barPercentage: .78, categoryPercentage: .92 }] },
-    options: { indexAxis: 'y', maintainAspectRatio: false, animation: o.anim,
-      plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => title(i[0].dataIndex), label: i => [`e = ${fmt(order[i.dataIndex].e, 2)}`, AUFBAU_TEXT[order[i.dataIndex].aufbau]] } } },
-      scales: { x: { min: 0, max: 1.05, grid: o.grid, ticks: { ...o.ticks, stepSize: .25, callback: deNum(2) }, border: { display: false } }, y: { grid: { display: false }, ticks: { color: css('--ink-2'), autoSkip: false, font: { size: 13 } }, border: { color: css('--rule') } } } } });
-
   chart('chM', { type: 'line',
     data: { labels, datasets: [
       ...[2, 1, 0.5].map(v => ({ data: labels.map(() => v), borderColor: muted, borderDash: [5, 5], borderWidth: 1, pointRadius: 0, pointHitRadius: 0, order: 3 })),
@@ -418,7 +412,7 @@ async function selectDeriv(id, scroll) {
 }
 function renderDeriv() {
   const run = dRun, raw = run && rawCache[run.id]; if (!raw) return;
-  const o = baseOpts(), col = dCart === 1 ? css(run.T.color) : css('--w2'), S = cartSeries(raw);
+  const o = baseOpts(), col = dCart === 1 ? css('--ink') : css('--w2'), S = cartSeries(raw);
   const inWin = (arr) => arr.map((y, i) => ({ x: raw.t[i], y })).filter(p => p.x >= dWin[0] - 1e-9 && p.x <= dWin[1] + 1e-9);
   const xs = { type: 'linear', min: dWin[0], max: dWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.25, callback: deNum(2) } };
   const cur = { muted: css('--muted'), ink: css('--ink'), ring: css('--raised'), color: col, span: 0.3 };
@@ -493,7 +487,7 @@ function renderModel() {
   const run = modelRun, raw = run && rawCache[run.id]; if (!raw) return;
   const k = +mk.value, m1 = +mm1.value, m2 = +mm2.value;
   $('o_k').textContent = k; $('o_mm1').textContent = fmt(m1, 2); $('o_mm2').textContent = fmt(m2, 2);
-  const o = baseOpts(), c1 = css(run.T.color), c2 = css('--w2'), ink = css('--ink'), muted = css('--muted');
+  const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2'), ink = css('--ink-2'), muted = css('--muted');
   const { out, t0, t1 } = simulate(run, raw, k, m1, m2);
   const meas = arr => arr.map((y, i) => (y === null || raw.t[i] < t0 || raw.t[i] > t1 || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
   const xs = { type: 'linear', min: t0, max: t1, grid: o.grid, ticks: { ...o.ticks, callback: deNum(1) }, title: o.axisTitle('t in s') };
@@ -506,11 +500,11 @@ function renderModel() {
     options: { maintainAspectRatio: false, animation: false, parsing: false,
       plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y)} m` } } },
       scales: { x: xs, y: { min: 0, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, border: { display: false }, title: o.axisTitle('x in m') } } } });
-  legend('lgME', [[shapeSVG.line(c1), 'Wagen 1'], [shapeSVG.line(c2), 'Wagen 2'], [shapeSVG.line(ink), 'Summe E_kin'], [shapeSVG.line(muted, true), 'E_kin + Federenergie']]);
+  legend('lgME', [[shapeSVG.line(c1), 'Wagen 1'], [shapeSVG.line(c2), 'Wagen 2'], [shapeSVG.line(ink, true), 'Summe E_kin'], [shapeSVG.line(muted, true), 'E_kin + Federenergie (lang gestrichelt)']]);
   const ds = (label, f, color, extra = {}) => ({ label, data: out.map(p => ({ x: p.t, y: f(p) * 1000 })), borderColor: color, borderWidth: 2, pointRadius: 0, ...extra });
   chart('chME', { type: 'line', data: { datasets: [
-      ds('Wagen 1', p => p.E1, c1), ds('Wagen 2', p => p.E2, c2), ds('Summe E_kin', p => p.E1 + p.E2, ink, { borderWidth: 2.5 }),
-      ds('E_kin + Federenergie', p => p.E1 + p.E2 + p.Ef, muted, { borderDash: [5, 4], borderWidth: 1.5 })] },
+      ds('Wagen 1', p => p.E1, c1), ds('Wagen 2', p => p.E2, c2), ds('Summe E_kin', p => p.E1 + p.E2, ink, { borderWidth: 3, borderDash: [2, 3] }),
+      ds('E_kin + Federenergie', p => p.E1 + p.E2 + p.Ef, muted, { borderDash: [8, 4], borderWidth: 1.5 })] },
     options: { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, 1)} mJ` } } },
       scales: { x: xs, y: { beginAtZero: true, grid: o.grid, ticks: { ...o.ticks, callback: deNum(0) }, border: { display: false }, title: o.axisTitle('E in mJ') } } } });
