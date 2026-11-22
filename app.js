@@ -205,7 +205,7 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
   }
   function draw() {
     if (!simTraj.length) return;
-    const k = Math.min(1, H / 250), padL = 64 * Math.max(.7, k), padR = 24, sc = (W - padL - padR) / SIM.L, X = x => padL + x * sc;
+    const k = Math.min(1, H / 250), padL = 64 * Math.max(.7, k), padR = 64 * Math.max(.7, k), sc = (W - padL - padR) / SIM.L, X = x => padL + x * sc;
     const railY = H - 52 * k, bodyH = 30 * k, wr = 5 * k, bodyTop = railY - 2 * wr - bodyH;
     const { m1, m2 } = simParams();
     const t = reduceMotion ? 0 : (performance.now() - simT0) / 1000;
@@ -223,33 +223,34 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
       if (major) ctx.fillText(fmt(x, 1), px, railY + 32 * k);
     }
     ctx.textAlign = 'left'; ctx.fillText('x in m', X(SIM.L) - 30, railY + 46 * k > H - 2 ? H - 2 : railY + 46 * k);
-    // Ultraschallsensoren links
-    const flagTop = bodyTop - 62 * k, beam1 = flagTop + 8 * k, beam2 = bodyTop + bodyH / 2;
-    ctx.fillStyle = ink2; ctx.beginPath(); ctx.roundRect(X(0) - 30 * k - 8, beam1 - 9 * k, 22 * k, 18 * k, 3); ctx.fill();
-    ctx.beginPath(); ctx.roundRect(X(0) - 30 * k - 8, beam2 - 9 * k, 22 * k, 18 * k, 3); ctx.fill();
-    ctx.fillStyle = muted; ctx.font = font(500, 13); ctx.textAlign = 'left';
-    ctx.fillText('Sensoren', 4, flagTop - 14 * k);
+    // Ultraschallsensoren: links Sensor 2 (misst Wagen 2), rechts Sensor 1 (misst Wagen 1)
+    const plateTop = bodyTop - 40 * k, beam = plateTop + 12 * k, sw = 22 * k, sh = 18 * k;
+    ctx.fillStyle = ink2;
+    ctx.beginPath(); ctx.roundRect(X(0) - sw - 10, beam - sh / 2, sw, sh, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(X(SIM.L) + 10, beam - sh / 2, sw, sh, 3); ctx.fill();
+    ctx.fillRect(X(0) - sw / 2 - 11, beam + sh / 2, 2, railY - beam - sh / 2); ctx.fillRect(X(SIM.L) + sw / 2 + 9, beam + sh / 2, 2, railY - beam - sh / 2);
+    ctx.fillStyle = muted; ctx.font = font(500, 13); ctx.textAlign = 'center';
+    ctx.fillText('Sensor 2', X(0) - sw / 2 - 10, beam - sh / 2 - 8); ctx.fillText('Sensor 1', X(SIM.L) + sw / 2 + 10, beam - sh / 2 - 8);
     // Wagen
     const C = SIM.cart;
-    function cart(c, col, label, m, flag) {
+    function cart(c, col, label, m, rear) {   // rear = −1: Heck links, +1: Heck rechts
       const x = X(c - C / 2), w = C * sc;
       ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, bodyTop, w, bodyH, 4); ctx.fill();
       [x + w * .2, x + w * .8].forEach(cx => { ctx.beginPath(); ctx.arc(cx, railY - wr, wr, 0, 7); ctx.fill(); });
       // Zusatzgewicht: Höhe wächst mit der Masse
       const wh = (6 + 26 * (m - 0.1) / 0.9) * k;
       ctx.fillStyle = ink2; ctx.globalAlpha = .85; ctx.beginPath(); ctx.roundRect(x + w * .3, bodyTop - wh, w * .45, wh, 2); ctx.fill(); ctx.globalAlpha = 1;
-      if (flag) { ctx.fillStyle = col; ctx.fillRect(x + w * .12, flagTop, 4, bodyTop - flagTop); ctx.fillRect(x + w * .12, flagTop, w * .16, 14 * k); }
+      // Reflektorplatte am Heck, ragt nach oben
+      ctx.fillStyle = col; ctx.fillRect(rear < 0 ? x : x + w - 5, plateTop, 5, bodyTop - plateTop + 2);
       ctx.fillStyle = raised; ctx.font = font(600, 16); ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, bodyTop + bodyH / 2 + 5);
       ctx.fillStyle = ink; ctx.font = font(600, 14); ctx.fillText(fmt(m, 2) + ' kg', x + w * .52, bodyTop - wh - 5);
     }
-    // Abstandslinien x1, x2
+    // Ultraschall zur Heckplatte des jeweiligen Wagens
     ctx.setLineDash([4, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
-    const x2face = X(p.c2 - C / 2), x1flag = X(p.c1 - C / 2) + C * sc * .12;
-    ctx.beginPath(); ctx.moveTo(X(0) - 8, beam2); ctx.lineTo(x2face, beam2); ctx.moveTo(X(0) - 8, beam1); ctx.lineTo(x1flag, beam1); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = muted; ctx.font = font(500, 14); ctx.textAlign = 'center';
-    ctx.fillText('x₂', (X(0) + x2face) / 2, beam2 - 5); ctx.fillText('x₁', (X(0) + x1flag) / 2, beam1 - 5);
-    cart(p.c2, col2, 'W2', m2, false);
-    cart(p.c1, col1, 'W1', m1, true);
+    const plate2 = X(p.c2 - C / 2), plate1 = X(p.c1 + C / 2);
+    ctx.beginPath(); ctx.moveTo(X(0) - 10, beam); ctx.lineTo(plate2, beam); ctx.moveTo(X(SIM.L) + 10, beam); ctx.lineTo(plate1, beam); ctx.stroke(); ctx.setLineDash([]);
+    cart(p.c2, col2, 'W2', m2, -1);
+    cart(p.c1, col1, 'W1', m1, 1);
     // Aufsätze: beide Wagen tragen immer denselben (Feder, Schaumstoffkeil oder Klett), einander zugewandt
     const by = bodyTop + bodyH * .2, bh = bodyH * .6, bl = SIM.buf * sc;
     function buffer(face, dir, col) {   // dir = −1: Aufsatz zeigt nach links, +1: nach rechts
