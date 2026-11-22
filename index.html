@@ -159,6 +159,7 @@ tbody tr:last-child td{border-bottom:0}
 #table tbody tr[data-run] td:last-child::after{content:"›";margin-left:10px;color:var(--muted)}
 th.calc,td.calc{background:color-mix(in srgb,var(--ink) 4%,transparent)}
 td .swatch{margin-right:6px}
+.ph{font-style:italic;color:var(--muted)}
 .callout{font-size:16px;color:var(--ink-2);border-left:3px solid var(--ink);padding:6px 16px;margin:40px 0 0}
 .callout b{color:var(--ink)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--ink-2);margin-bottom:4px}
@@ -358,8 +359,8 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <div class="ctl">
       <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
       <label>Dämpfung c in N·s/m <output id="o_c"></output><input type="range" id="mc" min="0" max="20" step="0.5" value="0"></label>
-      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.1" max="1.5" step="0.01" value="0.25"></label>
-      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.1" max="1.5" step="0.01" value="0.5"></label>
+      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.05" max="0.5" step="0.005" value="0.25"></label>
+      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.05" max="0.5" step="0.005" value="0.5"></label>
     </div>
     <p class="note missing" id="modelMassNote">Massen angenommen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
     <p class="callout" id="modelE"></p>

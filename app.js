@@ -67,6 +67,7 @@ function parseRuns(text) {
     o.e = -(o.u1 - o.u2) / (o.v1 - o.v2);
     o.ratio = -(o.u1 - o.v1) / (o.u2 - o.v2);       // m2/m1, das die Impulserhaltung verlangt
     o.hasMass = ok(o.m1) && ok(o.m2);
+    o.ph = /platzhalter/i.test(g(r, 'm_quelle') || '');   // vorläufige Massen, noch nicht gewogen
     if (o.hasMass) {
       o.p0 = o.m1 * o.v1 + o.m2 * o.v2; o.p1 = o.m1 * o.u1 + o.m2 * o.u2;
       o.E0 = .5 * o.m1 * o.v1 ** 2 + .5 * o.m2 * o.v2 ** 2; o.E1 = .5 * o.m1 * o.u1 ** 2 + .5 * o.m2 * o.u2 ** 2;
@@ -240,7 +241,7 @@ $('sPlay').addEventListener('click', () => playSetup());
       const x = X(c - C / 2), w = C * sc;
       ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, bodyTop, w, bodyH, 4); ctx.fill();
       [x + w * .2, x + w * .8].forEach(cx => { ctx.beginPath(); ctx.arc(cx, railY - wr, wr, 0, 7); ctx.fill(); });
-      const wh = (6 + 26 * (mRel - 0.1) / 0.9) * k;
+      const wh = (4 + 24 * mRel / Math.max(w1, w2)) * k;   // Zusatzgewicht: schwerer Wagen höher
       ctx.fillStyle = ink2; ctx.globalAlpha = .85; ctx.beginPath(); ctx.roundRect(x + w * .3, bodyTop - wh, w * .45, wh, 2); ctx.fill(); ctx.globalAlpha = 1;
       // Reflektorplatte am Heck, ragt nach oben
       ctx.fillStyle = col; ctx.fillRect(rear < 0 ? x : x + w - 5, plateTop, 5, bodyTop - plateTop + 2);
@@ -257,7 +258,7 @@ $('sPlay').addEventListener('click', () => playSetup());
     ctx.setLineDash([4, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
     const plate2 = X(p.c2 - C / 2), plate1 = X(p.c1 + C / 2);
     ctx.beginPath(); ctx.moveTo(X(0) - 10, beam); ctx.lineTo(plate2, beam); ctx.moveTo(X(SIM.L) + 10, beam); ctx.lineTo(plate1, beam); ctx.stroke(); ctx.setLineDash([]);
-    const mt = (m, n) => ok(m) ? { s: fmt(m, 3) + ' kg' } : { s: `m${n} fehlt`, miss: true };
+    const mt = (m, n) => ok(m) ? { s: Math.round(m * 1000) + ' g' + (run.ph ? ' (vorläufig)' : ''), miss: run.ph } : { s: `m${n} fehlt`, miss: true };
     cart(p.c2, col2, 'W2', w2, mt(run.m2, '₂'), -1);
     cart(p.c1, col1, 'W1', w1, mt(run.m1, '₁'), 1);
     // Modell: nur im simulierten Zeitfenster
@@ -351,14 +352,16 @@ function renderTable() {
     <td>${r.id}</td><td>${r.aufbau}</td>
     <td>${fmt(r.v1)}</td><td>${fmt(r.v2)}</td><td>${fmt(r.u1)}</td><td>${fmt(r.u2)}</td>
     <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
-    <td>${ok(r.m1) ? fmt(r.m1) : missing}</td><td>${ok(r.m2) ? fmt(r.m2) : missing}</td>
+    <td>${ok(r.m1) ? (r.ph ? `<span class="ph">${fmt(r.m1)}*</span>` : fmt(r.m1)) : missing}</td><td>${ok(r.m2) ? (r.ph ? `<span class="ph">${fmt(r.m2)}*</span>` : fmt(r.m2)) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
   }).join('');
   $('table').querySelectorAll('tbody tr[data-run]').forEach(tr => {
     tr.addEventListener('click', () => openRun(tr.dataset.run));
     tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRun(tr.dataset.run); } });
   });
-  $('massNote').style.display = RUNS.every(r => r.hasMass) ? 'none' : '';
+  const PH = RUNS.some(r => r.ph);
+  $('massNote').style.display = RUNS.every(r => r.hasMass) && !PH ? 'none' : '';
+  if (PH) $('massNote').innerHTML = '<b>Massen vorläufig.</b> Leicht 80 g, schwer 120 g sind Platzhalter (mit * markiert), bis die gewogenen Werte da sind. Impuls und Energie sind damit nur zur Orientierung. Die Geschwindigkeiten verlangen eher ein Verhältnis von etwa 1 : 2 (Spalte m₂/m₁), die Platzhalter haben 1 : 1,5.';
 }
 
 function renderOverviewCharts() {
@@ -381,8 +384,9 @@ function renderOverviewCharts() {
           afterBuildTicks: ax => { ax.ticks = [0.25, 0.5, 1, 2, 4].map(v => ({ value: v })); }, ticks: { ...o.ticks, callback: v => ({ 0.25: '¼', 0.5: '½', 1: '1', 2: '2', 4: '4' })[v] ?? '' } } } } });
 
   const withMass = RUNS.filter(r => r.hasMass);
-  $('pFigure').style.display = withMass.length ? '' : 'none'; $('massFact').style.display = RUNS.every(r => r.hasMass) ? 'none' : '';
-  $('pSub').textContent = withMass.length ? 'Gestrichelt: perfekte Impulserhaltung p′ = p' : 'Erscheint, sobald die Massen in data/messungen.csv eingetragen sind.';
+  $('pFigure').style.display = withMass.length ? '' : 'none'; $('massFact').style.display = RUNS.every(r => r.hasMass) && !RUNS.some(r => r.ph) ? 'none' : '';
+  if (RUNS.some(r => r.ph)) $('massFact').innerHTML = 'Massen <b>vorläufig</b>';
+  $('pSub').textContent = withMass.length ? 'Gestrichelt: perfekte Impulserhaltung p′ = p.' + (withMass.some(r => r.ph) ? ' Mit vorläufigen Massen (80 g / 120 g), also nur zur Orientierung.' : '') : 'Erscheint, sobald die Massen in data/messungen.csv eingetragen sind.';
   if (withMass.length) {
     const lim = Math.max(...withMass.flatMap(r => [Math.abs(r.p0), Math.abs(r.p1)])) * 1.15;
     chart('chP', { type: 'scatter',
@@ -445,7 +449,8 @@ async function selectModelRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
   modelRun = run;
   const [a, b] = defaultMasses(run); mm1.value = a; mm2.value = b;
-  $('modelMassNote').style.display = run.hasMass ? 'none' : '';
+  $('modelMassNote').style.display = run.hasMass && !run.ph ? 'none' : '';
+  if (run.ph) $('modelMassNote').textContent = 'Massen vorläufig (Platzhalter 80 g / 120 g), bis die gewogenen Werte in der CSV stehen.';
   await loadRaw(run); renderModel();
 }
 function simulate(run, raw, k, m1, m2, c = 0) {
@@ -466,7 +471,7 @@ function simulate(run, raw, k, m1, m2, c = 0) {
 function renderModel() {
   const run = modelRun, raw = run && rawCache[run.id]; if (!raw) return;
   const k = +mk.value, c = +mc.value, m1 = +mm1.value, m2 = +mm2.value;
-  $('o_k').textContent = k; $('o_c').textContent = fmt(c, 1); $('o_mm1').textContent = fmt(m1, 2); $('o_mm2').textContent = fmt(m2, 2);
+  $('o_k').textContent = k; $('o_c').textContent = fmt(c, 1); $('o_mm1').textContent = fmt(m1, 3); $('o_mm2').textContent = fmt(m2, 3);
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2'), ink = css('--ink-2'), muted = css('--muted');
   const sim = simulate(run, raw, k, m1, m2, c), { out, t0, t1 } = sim;
   if (ani.run === run) { ani.model = sim; fillSetupFigures(); }
@@ -521,7 +526,7 @@ async function selectRun(id) {
   document.querySelectorAll('#viewDetail details[open]').forEach(d => { d.open = false; });
   const k = ORDER.indexOf(run), prev = ORDER[k - 1], next = ORDER[k + 1];
   $('dhTitle').textContent = `Stoss ${run.id}`;
-  $('dhInfo').innerHTML = `${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${fmt(run.m1)} kg, m₂ = ${fmt(run.m2)} kg` : '<span class="missing">Massen fehlen noch</span>'}`;
+  $('dhInfo').innerHTML = `${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${Math.round(run.m1 * 1000)} g, m₂ = ${Math.round(run.m2 * 1000)} g${run.ph ? ' <span class="missing">(vorläufig)</span>' : ''}` : '<span class="missing">Massen fehlen noch</span>'}`;
   const nb = (b, r, txt) => { b.disabled = !r; b.textContent = r ? txt(r.id) : txt('').trim(); b.onclick = r ? () => { history.replaceState(null, '', '#m' + r.id); selectRun(r.id); } : null; };
   nb($('prevBtn'), prev, i => `‹ ${i}`); nb($('nextBtn'), next, i => `${i} ›`);
   const raw = await loadRaw(run); if (SEL !== run) return;
