@@ -155,18 +155,14 @@ function setupLoad(run, raw) {
   Object.assign(ani, { run, raw, tA: 0, tB: raw.t[raw.t.length - 1] });   // volle Messdauer
   fillSetupFigures();
   // erst abspielen, wenn die Grafik im Bild ist
-  ani.pending = !reduceMotion; playSetup(false); ani.frozen = reduceMotion ? ani.tB : ani.tA;
-  if (ani.pending && ani.visible) { ani.pending = false; playSetup(); }
+  // läuft erst nach Klick auf Start
+  ani.playing = false; ani.frozen = ani.tA; $('sPlay').textContent = 'Start';
 }
-new IntersectionObserver(es => es.forEach(e => {
-  ani.visible = e.isIntersecting;
-  if (ani.visible && ani.pending) { ani.pending = false; playSetup(); }
-}), { threshold: 0.6 }).observe($('setupCanvas'));
-function playSetup(on = true) { ani.start = performance.now(); ani.playing = on; ani.frozen = on ? ani.tA : ani.tB; }
+function playSetup() { ani.start = performance.now(); ani.playing = true; ani.frozen = ani.tA; $('sPlay').textContent = 'Läuft …'; }
 function setupTime() {
   if (!ani.playing) return ani.frozen;
   const t = ani.tA + (performance.now() - ani.start) / 1000 * ani.speed;
-  if (t >= ani.tB) { ani.playing = false; ani.frozen = ani.tB; }
+  if (t >= ani.tB) { ani.playing = false; ani.frozen = ani.tB; $('sPlay').textContent = 'Nochmals abspielen'; }
   return Math.min(t, ani.tB);
 }
 function fillSetupFigures() {
@@ -179,7 +175,7 @@ function fillSetupFigures() {
   set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 1)} (${r.aufbau})</span>`);
 }
 document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
-  ani.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); playSetup();
+  ani.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); if (ani.playing) playSetup();
 }));
 $('sPlay').addEventListener('click', () => playSetup());
 
@@ -310,6 +306,23 @@ const markPlugin = {
 };
 Chart.register(markPlugin);
 
+// Schraffiert den Bereich unter 0,20 m: dort messen die Ultraschallsensoren nicht mehr
+const zonePlugin = {
+  id: 'zone',
+  beforeDatasetsDraw(chart, _, o) {
+    if (!o || !ok(o.below)) return;
+    const { ctx, chartArea: a, scales: { y } } = chart;
+    const top = Math.max(a.top, y.getPixelForValue(o.below)); if (top >= a.bottom) return;
+    ctx.save(); ctx.beginPath(); ctx.rect(a.left, top, a.right - a.left, a.bottom - top); ctx.clip();
+    ctx.strokeStyle = o.color; ctx.lineWidth = 1;
+    for (let x = a.left - (a.bottom - top); x < a.right; x += 7) { ctx.beginPath(); ctx.moveTo(x, a.bottom); ctx.lineTo(x + (a.bottom - top), top); ctx.stroke(); }
+    ctx.fillStyle = o.text; ctx.font = '500 13px Calibri, Carlito, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('unter 0,20 m: Sensor misst nicht', a.right - 6, top + 15);
+    ctx.restore();
+  },
+};
+Chart.register(zonePlugin);
+
 let charts = {};
 function chart(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), cfg); return charts[id]; }
 function baseOpts() {
@@ -401,12 +414,13 @@ function renderDeriv() {
   const band = { band: [raw.lo, raw.hi], fill: css('--rule') + '88', text: css('--muted') };
   const tip = (unit, d) => ({ ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, d)} ${unit}` } });
   const common = { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
-  const yAx = (title, d) => ({ afterFit: ax => { ax.width = 64; }, grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title) });
+  const yAx = (title, d, extra = {}) => ({ afterFit: ax => { ax.width = 64; }, grace: '8%', grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title), ...extra });
+  const zone = { below: X2_MIN + 0.001, color: css('--rule'), text: css('--muted') };
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']]);
   const pts = (label, arr, col) => ({ label, data: inWin(arr), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.6, pointHoverRadius: 3 });
   const ln = (label, arr, col) => ({ label, data: inWin(arr), borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 });
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band }, scales: { x: xs, y: yAx('x in m', 2) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band, zone }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
@@ -459,15 +473,17 @@ function renderModel() {
   $('modelE').innerHTML = `Stosszahl gemessen <b>${fmt(Math.max(run.e, 0), 2)}</b>, im Modell <b>${fmt(sim.e, 2)}</b>. Endgeschwindigkeiten im Modell: v₁′ = ${fmt(sim.u1, 2)} m/s, v₂′ = ${fmt(sim.u2, 2)} m/s (gemessen ${fmt(run.u1, 2)} und ${fmt(run.u2, 2)} m/s).`;
   const meas = arr => arr.map((y, i) => (y === null || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
   const xs = { type: 'linear', min: 0, max: raw.t[raw.t.length - 1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.5, callback: deNum(1) }, title: o.axisTitle('t in s') };
+  // Modell kennt keine Schienenenden: Linie endet, wo der Wagen die Schiene (0 bis 1,2 m) verlässt
+  const onRail = (arr, key) => { const r = []; for (const p of arr) { if (p[key] < 0 || p[key] > 1.2) break; r.push({ x: p.t, y: p[key] }); } return r; };
   legend('lgMX', [[shapeSVG.dots(c1), 'Wagen 1 gemessen'], [shapeSVG.line(c1), 'Wagen 1 Modell'], [shapeSVG.dots(c2), 'Wagen 2 gemessen'], [shapeSVG.line(c2), 'Wagen 2 Modell']]);
   chart('chMX', { type: 'scatter', data: { datasets: [
       { label: 'Wagen 1 gemessen', data: meas(raw.x1), backgroundColor: c1 + '99', borderWidth: 0, pointRadius: 1.5 },
       { label: 'Wagen 2 gemessen', data: meas(raw.x2), backgroundColor: c2 + '99', borderWidth: 0, pointRadius: 1.5 },
-      { label: 'Wagen 1 Modell', type: 'line', data: out.map(p => ({ x: p.t, y: p.x1 })), borderColor: c1, borderWidth: 2, pointRadius: 0 },
-      { label: 'Wagen 2 Modell', type: 'line', data: out.map(p => ({ x: p.t, y: p.x2 })), borderColor: c2, borderWidth: 2, pointRadius: 0 }] },
+      { label: 'Wagen 1 Modell', type: 'line', data: onRail(out, 'x1'), borderColor: c1, borderWidth: 2, pointRadius: 0 },
+      { label: 'Wagen 2 Modell', type: 'line', data: onRail(out, 'x2'), borderColor: c2, borderWidth: 2, pointRadius: 0 }] },
     options: { maintainAspectRatio: false, animation: false, parsing: false,
-      plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y)} m` } } },
-      scales: { x: xs, y: { min: 0, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, border: { display: false }, title: o.axisTitle('x in m') } } } });
+      plugins: { legend: { display: false }, zone: { below: X2_MIN + 0.001, color: css('--rule'), text: css('--muted') }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y)} m` } } },
+      scales: { x: xs, y: { min: 0, max: 1.2, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, border: { display: false }, title: o.axisTitle('x in m') } } } });
   legend('lgME', [[shapeSVG.line(c1), 'Wagen 1'], [shapeSVG.line(c2), 'Wagen 2'], [shapeSVG.line(ink, true), 'Summe E_kin'], [shapeSVG.line(muted, true), 'E_kin + Federenergie (lang gestrichelt)']]);
   const ds = (label, f, color, extra = {}) => ({ label, data: out.map(p => ({ x: p.t, y: f(p) * 1000 })), borderColor: color, borderWidth: 2, pointRadius: 0, ...extra });
   chart('chME', { type: 'line', data: { datasets: [
@@ -475,7 +491,7 @@ function renderModel() {
       ds('E_kin + Federenergie', p => p.E1 + p.E2 + p.Ef, muted, { borderDash: [8, 4], borderWidth: 1.5 })] },
     options: { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, 1)} mJ` } } },
-      scales: { x: xs, y: { beginAtZero: true, grid: o.grid, ticks: { ...o.ticks, callback: deNum(0) }, border: { display: false }, title: o.axisTitle('E in mJ') } } } });
+      scales: { x: xs, y: { beginAtZero: true, grace: '8%', grid: o.grid, ticks: { ...o.ticks, callback: deNum(0) }, border: { display: false }, title: o.axisTitle('E in mJ') } } } });
 }
 [mk, mc, mm1, mm2].forEach(el => el.addEventListener('input', renderModel));
 

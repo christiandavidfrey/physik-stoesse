@@ -288,13 +288,13 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     </details>
     <details class="more">
       <summary>Annahmen der Wiedergabe</summary>
-      <p>Die Orte sind über 0,15 s geglättet (lokale Parabel), damit nichts zittert. Unter 0,20 m misst Sensor 2 nichts mehr; dort wird Wagen 2 mit seiner letzten Geschwindigkeit weitergeführt und bleibt am Schienenende stehen. Die Geschwindigkeiten vorher und nachher stammen aus linearen Fits. Das Massenverhältnis folgt allein aus der Impulserhaltung, ohne gewogene Massen.</p>
+      <p>Die Orte sind über 0,15 s geglättet (lokale Parabel), damit nichts zittert. Unter etwa 20 cm messen die Ultraschallsensoren nicht mehr zuverlässig, das zeigen auch unsere Daten; Werte unter 0,20 m sind verworfen. In der Wiedergabe wird Wagen 2 mit seiner letzten Geschwindigkeit weitergeführt und bleibt am Schienenende stehen. Die Geschwindigkeiten vorher und nachher stammen aus linearen Fits. Das Massenverhältnis folgt allein aus der Impulserhaltung, ohne gewogene Massen.</p>
     </details>
   </div>
   <figure class="wide">
     <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Die gewählte Messung wird abgespielt, das Federmodell als Umriss."></canvas>
     <div class="row">
-      <button class="btn play" id="sPlay">Nochmals abspielen</button>
+      <button class="btn play" id="sPlay">Start</button>
       <span class="slabel" style="margin-left:12px">Tempo</span>
       <button class="btn" data-speed="1" aria-pressed="true">Echtzeit</button>
       <button class="btn" data-speed="0.25" aria-pressed="false">Zeitlupe ¼</button>
@@ -334,7 +334,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <div class="slabel">Geschwindigkeit v(t)</div><div class="box" style="height:210px"><canvas id="chV" role="img" aria-label="Geschwindigkeit beider Wagen gegen Zeit"></canvas></div>
       <div class="slabel">Beschleunigung a(t)</div><div class="box" style="height:210px"><canvas id="chA" role="img" aria-label="Beschleunigung beider Wagen gegen Zeit"></canvas></div>
     </div>
-    <figcaption class="col-note">Schwarz Wagen 1, grau Wagen 2. Punkte: Rohdaten, Linien: geglättete Ableitungen (0,15 s). Grau hinterlegt ist der Stoss, die Fläche unter a(t) dort entspricht Δv. Wagen 2 ist unter 0,20 m nicht messbar.</figcaption>
+    <figcaption class="col-note">Schwarz Wagen 1, grau Wagen 2. Punkte: Rohdaten, Linien: geglättete Ableitungen (0,15 s). Grau hinterlegt ist der Stoss, die Fläche unter a(t) dort entspricht Δv. Schraffiert: unter 0,20 m messen die Sensoren nicht, dort enden die Kurven von Wagen 2.</figcaption>
   </figure>
 </section>
 
