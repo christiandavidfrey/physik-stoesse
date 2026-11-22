@@ -3,250 +3,472 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stösse im Experiment</title>
-<meta name="description" content="Elastische und inelastische Stösse: Theorie, Simulation und eigene Messdaten.">
+<title>Stösse auf der Luftkissenbahn</title>
+<meta name="description" content="Elastische und inelastische Stösse: Theorie, Simulation und eigene Messdaten aus dem Physikpraktikum.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
 <style>
+/* ---------- Tokens ---------- */
 :root{
-  --bg:#0b1020; --panel:#121a33; --panel2:#18213f; --line:#26305a;
-  --text:#e7ebff; --muted:#9aa3c7; --a:#4cc9f0; --b:#f72585; --c:#ffd166; --ok:#06d6a0;
+  --paper:#FAFAF7;
+  --grid-minor:rgba(214,120,90,.07);
+  --grid-major:rgba(214,120,90,.16);
+  --ink:#1E2433;
+  --ink-2:#4A5163;
+  --muted:#6B7283;
+  --rule:#D9D6CE;
+  --rail:#B9B6AE;
+  --raised:#FFFFFF;
+  --c-el:#2F55C8;   /* elastisch */
+  --c-in:#C98A00;   /* inelastisch */
+  --c-vi:#C2386E;   /* vollkommen inelastisch */
+  --c-before:#B4B2AA;
+  --accent:#2F55C8;
+  --gate:#C2386E;
+  --focus:#2F55C8;
+  color-scheme:light;
 }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#161A22;
+    --grid-minor:rgba(120,150,220,.06);
+    --grid-major:rgba(120,150,220,.13);
+    --ink:#E8EAF0; --ink-2:#BFC4D0; --muted:#8C93A3;
+    --rule:#2C3240; --rail:#4A5160; --raised:#1D222C;
+    --c-el:#6F8FF0; --c-in:#BC8714; --c-vi:#E0608F; --c-before:#4D5463;
+    --accent:#8AA4F5; --gate:#E0608F; --focus:#8AA4F5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#161A22;
+  --grid-minor:rgba(120,150,220,.06);
+  --grid-major:rgba(120,150,220,.13);
+  --ink:#E8EAF0; --ink-2:#BFC4D0; --muted:#8C93A3;
+  --rule:#2C3240; --rail:#4A5160; --raised:#1D222C;
+  --c-el:#6F8FF0; --c-in:#BC8714; --c-vi:#E0608F; --c-before:#4D5463;
+  --accent:#8AA4F5; --gate:#E0608F; --focus:#8AA4F5;
+  color-scheme:dark;
+}
+
+/* ---------- Base ---------- */
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 "Space Grotesk",system-ui,sans-serif}
-a{color:var(--a)}
-.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
-nav{position:sticky;top:0;z-index:10;background:rgba(11,16,32,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;gap:20px;align-items:center;height:56px;overflow-x:auto;white-space:nowrap}
-nav b{margin-right:auto}
-nav a{color:var(--muted);text-decoration:none;font-size:14px}
-nav a:hover{color:var(--text)}
-header{padding:72px 0 32px}
-h1{font-size:clamp(36px,7vw,64px);line-height:1.05;margin:0 0 12px;letter-spacing:-.02em}
-h1 span{background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{color:var(--muted);font-size:18px;max-width:640px}
-section{padding:56px 0;border-top:1px solid var(--line)}
-h2{font-size:30px;margin:0 0 8px}
-h2 small{display:block;font-size:13px;color:var(--a);font-family:"JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-.sub{color:var(--muted);margin:0 0 28px;max-width:720px}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
-.card h3{margin:0 0 8px;font-size:18px}
-.card p{margin:0;color:var(--muted)}
-.tag{display:inline-block;font:600 12px "JetBrains Mono",monospace;padding:2px 8px;border-radius:99px;margin-bottom:10px}
-.t-el{background:rgba(76,201,240,.15);color:var(--a)}
-.t-in{background:rgba(255,209,102,.15);color:var(--c)}
-.t-vi{background:rgba(247,37,133,.15);color:var(--b)}
-.formula{overflow-x:auto;padding:8px 0;color:var(--text)}
-canvas.track{width:100%;height:160px;display:block;background:var(--panel2);border-radius:12px;border:1px solid var(--line)}
-.sim{display:grid;gap:20px;grid-template-columns:1fr}
-.controls{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-.controls label{font-size:13px;color:var(--muted);display:block}
-.controls output{font-family:"JetBrains Mono",monospace;color:var(--text);float:right}
-input[type=range]{width:100%;accent-color:var(--a)}
-.btns{display:flex;gap:10px;flex-wrap:wrap}
-button{font:600 14px "Space Grotesk",sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
-button:hover{border-color:var(--a)}
-button.on{background:var(--a);color:#06101f;border-color:var(--a)}
-.stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.stat div{font-size:12px;color:var(--muted)}
-.stat strong{font:600 20px "JetBrains Mono",monospace}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;font:14px "JetBrains Mono",monospace;min-width:760px}
-th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line)}
-th{background:var(--panel2);color:var(--muted);font-weight:600;position:sticky;top:0}
-td:nth-child(2),th:nth-child(2){text-align:left}
-tbody tr:hover{background:var(--panel)}
-.note{font-size:13px;color:var(--muted);margin-top:10px}
-.demo{background:rgba(255,209,102,.1);border:1px dashed var(--c);color:var(--c);padding:10px 14px;border-radius:10px;font-size:14px;margin-bottom:16px}
-.chart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;height:340px}
-footer{padding:40px 0 60px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;color:var(--ink);background-color:var(--paper);
+  /* Millimeterpapier */
+  background-image:
+    linear-gradient(var(--grid-major) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-major) 1px,transparent 1px),
+    linear-gradient(var(--grid-minor) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-minor) 1px,transparent 1px);
+  background-size:50px 50px,50px 50px,10px 10px,10px 10px;
+  font:400 18px/1.65 "Source Serif 4",Georgia,serif;
+}
+a{color:var(--accent);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+.text{max-width:66ch}
+
+/* ---------- Nav ---------- */
+nav{border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(6px);position:sticky;top:0;z-index:5}
+nav .wrap{display:flex;align-items:baseline;gap:24px;height:52px;line-height:52px;overflow-x:auto;white-space:nowrap}
+nav .home{font:600 20px "Barlow Condensed",sans-serif;color:var(--ink);text-decoration:none;margin-right:auto}
+nav a:not(.home){font:500 17px "Barlow Condensed",sans-serif;color:var(--ink-2);text-decoration:none}
+nav a:not(.home):hover{color:var(--accent)}
+
+/* ---------- Hero ---------- */
+.hero{padding:56px 16px 24px}
+.hero h1{
+  font:700 clamp(52px,11vw,132px)/.88 "Barlow Condensed",sans-serif;
+  letter-spacing:-.015em;margin:0;max-width:10ch;
+}
+.hero .intro{max-width:52ch;color:var(--ink-2);margin:22px 0 0;font-size:19px}
+.bench{margin:36px 0 0}
+.bench canvas{display:block;width:100%;height:230px}
+.bench figcaption{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;margin-top:6px;font:500 17px "Barlow Condensed",sans-serif;color:var(--ink-2)}
+.bench figcaption strong{font-weight:600;color:var(--ink);font-size:22px}
+.bench figcaption .hint{color:var(--muted);margin-left:auto}
+
+/* ---------- Sections ---------- */
+section{padding:72px 0 8px}
+h2{font:600 clamp(36px,5vw,52px)/1 "Barlow Condensed",sans-serif;margin:0 0 18px;letter-spacing:-.005em}
+h3{font:600 26px/1.1 "Barlow Condensed",sans-serif;margin:0 0 8px}
+p{margin:0 0 14px}
+.katex{font-size:1.08em}
+.formula .katex-display{margin:.5em 0}
+.formula .katex-display>.katex{text-align:left}
+.law{margin:26px 0 8px;padding:18px 0 18px 22px;border-left:3px solid var(--accent);max-width:66ch}
+.law h3{font-size:22px;color:var(--ink-2);font-weight:500}
+.law .formula{overflow-x:auto;overflow-y:hidden}
+
+.cases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;margin-top:44px}
+@media (max-width:860px){.cases{grid-template-columns:1fr;gap:36px}}
+.case svg{display:block;width:100%;max-width:300px;height:auto;margin-bottom:14px;overflow:visible}
+.case h3{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case h3 .e{font-weight:500;font-size:20px;color:var(--muted)}
+.case p{color:var(--ink-2);font-size:17px}
+.case .formula{overflow-x:auto;overflow-y:hidden;font-size:15px}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:3px;flex:none;transform:translateY(1px)}
+
+/* ---------- Simulation ---------- */
+.lab{background:var(--raised);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 24px;margin-top:28px}
+.lab canvas{display:block;width:100%;height:210px}
+.controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px 22px;margin-top:18px}
+@media (max-width:860px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.controls label{display:block;font:500 17px "Barlow Condensed",sans-serif;color:var(--ink-2)}
+.controls output{float:right;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 0}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+button{
+  font:500 17px "Barlow Condensed",sans-serif;color:var(--ink);background:transparent;
+  border:1px solid var(--rule);border-radius:4px;padding:6px 14px;cursor:pointer;
+}
+button:hover{border-color:var(--ink-2)}
+button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:24px}
+@media (max-width:700px){.readout{grid-template-columns:1fr}}
+.readout h4{font:500 17px "Barlow Condensed",sans-serif;color:var(--muted);margin:0 0 6px}
+.momentum{font:600 30px "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.momentum span{color:var(--muted);font-weight:500;font-size:20px}
+.ebar{display:flex;height:18px;border-radius:4px;overflow:hidden;background:var(--rule);margin:8px 0 6px}
+.ebar i{display:block;height:100%;transition:width .35s ease}
+.ebar .kept{background:var(--accent)}
+.ebar .lost{background:repeating-linear-gradient(135deg,var(--c-vi) 0 2px,transparent 2px 7px)}
+@media (prefers-reduced-motion: reduce){.ebar i{transition:none}}
+.elegend{font:500 16px "Barlow Condensed",sans-serif;color:var(--ink-2);display:flex;gap:18px;flex-wrap:wrap}
+.elegend b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ---------- Daten ---------- */
+.setup{font-style:italic;color:var(--ink-2)}
+.demo{
+  display:flex;gap:10px;align-items:baseline;max-width:66ch;margin:18px 0 22px;padding:10px 14px;
+  border:1px dashed var(--c-in);border-radius:4px;font-size:16px;color:var(--ink-2);background:var(--raised)
+}
+.demo b{font:600 17px "Barlow Condensed",sans-serif;color:var(--ink)}
+.tablewrap{overflow-x:auto;background:var(--raised);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:860px;font:500 17px "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+th,td{padding:9px 14px;text-align:right;white-space:nowrap}
+thead th{font-weight:600;color:var(--ink-2);border-bottom:2px solid var(--ink);vertical-align:bottom}
+thead th small{display:block;font-weight:400;color:var(--muted);font-size:14px}
+tbody td{border-bottom:1px solid var(--rule)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
+th.calc,td.calc{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+td .swatch{margin-right:8px}
+.note{font-size:15px;color:var(--muted);margin-top:10px}
+
+/* ---------- Auswertung ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin:22px 0 14px;font:500 17px "Barlow Condensed",sans-serif;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend svg{width:14px;height:14px}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media (max-width:860px){.charts{grid-template-columns:1fr}}
+.chart{background:var(--raised);border:1px solid var(--rule);border-radius:6px;padding:18px 18px 12px;margin:0;min-width:0}
+.chart h3{font-size:22px;margin:0 0 2px}
+.chart p{font-size:15px;color:var(--muted);margin:0 0 10px}
+.chart .box{position:relative;height:300px}
+.chart.wide{grid-column:1/-1}
+.chart.wide .box{height:280px}
+
+footer{margin-top:88px;padding:26px 0 48px;border-top:1px solid var(--rule);font:500 17px "Barlow Condensed",sans-serif;color:var(--muted)}
 </style>
 </head>
 <body>
 
-<nav><div class="wrap">
-  <b>Stösse</b>
+<nav aria-label="Hauptnavigation"><div class="wrap">
+  <a class="home" href="#top">Stösse</a>
   <a href="#theorie">Theorie</a>
   <a href="#simulation">Simulation</a>
   <a href="#messdaten">Messdaten</a>
   <a href="#auswertung">Auswertung</a>
 </div></nav>
 
-<header class="wrap">
-  <h1>Stösse <span>im Experiment</span></h1>
-  <p class="lead">Elastisch, inelastisch, vollkommen inelastisch: was beim Zusammenprall zweier Körper erhalten bleibt und was verloren geht, gezeigt an eigenen Messdaten.</p>
-  <canvas class="track" id="hero"></canvas>
+<header class="hero wrap" id="top">
+  <h1>Stösse auf der Luftkissenbahn</h1>
+  <p class="intro">Zwei Gleiter, zwei Lichtschranken, ein Zusammenprall. Der Impuls bleibt immer erhalten. Wie viel Bewegungsenergie übrig bleibt, verrät, welche Art von Stoss es war.</p>
+  <figure class="bench">
+    <canvas id="hero" role="img" aria-label="Animation: zwei Gleiter stossen auf einer Luftkissenbahn zusammen. Stroboskop-Spuren zeigen die Geschwindigkeit."></canvas>
+    <figcaption><strong id="heroType">Elastischer Stoss</strong><span id="heroE">e = 1</span><span class="hint">Stroboskop-Spur: ein Abbild alle 0,1 s</span></figcaption>
+  </figure>
 </header>
 
 <main class="wrap">
 
 <section id="theorie">
-  <h2><small>01 · Theorie</small>Was beim Stoss erhalten bleibt</h2>
-  <p class="sub">Bei jedem Stoss in einem abgeschlossenen System bleibt der Gesamtimpuls erhalten. Ob auch die kinetische Energie erhalten bleibt, entscheidet über die Art des Stosses.</p>
-  <div class="card" style="margin-bottom:16px">
-    <h3>Impulserhaltung (gilt immer)</h3>
-    <div class="formula" data-tex="m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'"></div>
-    <h3 style="margin-top:12px">Stosszahl (Restitutionskoeffizient)</h3>
-    <div class="formula" data-tex="e = -\frac{v_1' - v_2'}{v_1 - v_2}, \qquad 0 \le e \le 1"></div>
+  <h2>Was beim Stoss erhalten bleibt</h2>
+  <div class="text">
+    <p>Wirken während des Stosses keine äusseren Kräfte, ist das System aus beiden Körpern abgeschlossen. Dann gilt die Impulserhaltung, egal wie hart oder weich der Zusammenprall ist.</p>
   </div>
-  <div class="grid">
-    <div class="card"><span class="tag t-el">e = 1</span><h3>Elastisch</h3>
-      <p>Impuls und kinetische Energie bleiben erhalten.</p>
-      <div class="formula" data-tex="\tfrac12 m_1 v_1^2 + \tfrac12 m_2 v_2^2 = \tfrac12 m_1 v_1'^2 + \tfrac12 m_2 v_2'^2"></div></div>
-    <div class="card"><span class="tag t-in">0 &lt; e &lt; 1</span><h3>Inelastisch</h3>
-      <p>Impuls bleibt erhalten, ein Teil der kinetischen Energie wird in Wärme, Verformung und Schall umgewandelt.</p>
-      <div class="formula" data-tex="\Delta E_\text{kin} = E_\text{kin}' - E_\text{kin} < 0"></div></div>
-    <div class="card"><span class="tag t-vi">e = 0</span><h3>Vollkommen inelastisch</h3>
-      <p>Beide Körper bewegen sich nach dem Stoss gemeinsam weiter. Der Energieverlust ist maximal.</p>
-      <div class="formula" data-tex="v' = \frac{m_1 v_1 + m_2 v_2}{m_1 + m_2}"></div></div>
+  <div class="law">
+    <h3>Impulserhaltung</h3>
+    <div class="formula" data-tex="m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'"></div>
+    <h3 style="margin-top:14px">Stosszahl</h3>
+    <div class="formula" data-tex="e = -\frac{v_1' - v_2'}{v_1 - v_2}"></div>
+  </div>
+  <div class="text">
+    <p>Die Stosszahl <em>e</em> vergleicht, wie schnell sich die Körper nach dem Stoss voneinander entfernen, mit der Geschwindigkeit, mit der sie sich vorher angenähert haben. Sie liegt zwischen 0 und 1 und sortiert jeden Stoss in einen von drei Fällen. Die kleinen Weg-Zeit-Diagramme zeigen jeweils zwei gleich schwere Gleiter, von denen einer anfangs ruht.</p>
+  </div>
+
+  <div class="cases">
+    <div class="case">
+      <svg data-strobe="1" aria-hidden="true"></svg>
+      <h3><span class="swatch" style="background:var(--c-el)"></span>Elastisch <span class="e">e = 1</span></h3>
+      <p>Impuls und kinetische Energie bleiben erhalten. Bei gleichen Massen tauschen die Gleiter ihre Geschwindigkeiten.</p>
+      <div class="formula" data-tex="E_\text{kin}' = E_\text{kin}"></div>
+    </div>
+    <div class="case">
+      <svg data-strobe="0.5" aria-hidden="true"></svg>
+      <h3><span class="swatch" style="background:var(--c-in)"></span>Inelastisch <span class="e">0 &lt; e &lt; 1</span></h3>
+      <p>Ein Teil der Bewegungsenergie geht in Verformung, Wärme und Schall über. Die Gleiter trennen sich langsamer, als sie sich genähert haben.</p>
+      <div class="formula" data-tex="E_\text{kin}' < E_\text{kin}"></div>
+    </div>
+    <div class="case">
+      <svg data-strobe="0" aria-hidden="true"></svg>
+      <h3><span class="swatch" style="background:var(--c-vi)"></span>Vollkommen inelastisch <span class="e">e = 0</span></h3>
+      <p>Die Gleiter haften aneinander und fahren gemeinsam weiter. Der Energieverlust ist so gross, wie es die Impulserhaltung zulässt.</p>
+      <div class="formula" data-tex="v' = \frac{m_1 v_1 + m_2 v_2}{m_1 + m_2}"></div>
+    </div>
   </div>
 </section>
 
 <section id="simulation">
-  <h2><small>02 · Simulation</small>Selbst ausprobieren</h2>
-  <p class="sub">Massen, Geschwindigkeiten und Stosszahl einstellen und zuschauen, wie sich Impuls und Energie verhalten.</p>
-  <div class="sim">
-    <canvas class="track" id="simCanvas" style="height:200px"></canvas>
+  <h2>Selbst ausprobieren</h2>
+  <div class="text"><p>Stell Massen, Startgeschwindigkeiten und Stosszahl ein. Die Spur hinter den Gleitern zeigt, wie sich ihre Geschwindigkeit beim Stoss ändert: weite Abstände heissen schnell, enge langsam.</p></div>
+  <div class="lab">
+    <canvas id="simCanvas" role="img" aria-label="Simulation der eingestellten Stosssituation"></canvas>
     <div class="controls">
-      <label>m₁ (kg) <output id="o_m1"></output><input type="range" id="m1" min="0.1" max="1" step="0.05" value="0.2"></label>
-      <label>m₂ (kg) <output id="o_m2"></output><input type="range" id="m2" min="0.1" max="1" step="0.05" value="0.4"></label>
-      <label>v₁ (m/s) <output id="o_v1"></output><input type="range" id="v1" min="0" max="1" step="0.05" value="0.5"></label>
-      <label>v₂ (m/s) <output id="o_v2"></output><input type="range" id="v2" min="-1" max="0.5" step="0.05" value="0"></label>
+      <label>Masse m₁ in kg <output id="o_m1"></output><input type="range" id="m1" min="0.1" max="1" step="0.05" value="0.2"></label>
+      <label>Masse m₂ in kg <output id="o_m2"></output><input type="range" id="m2" min="0.1" max="1" step="0.05" value="0.4"></label>
+      <label>v₁ in m/s <output id="o_v1"></output><input type="range" id="v1" min="0.05" max="1" step="0.05" value="0.5"></label>
+      <label>v₂ in m/s <output id="o_v2"></output><input type="range" id="v2" min="-0.6" max="0.3" step="0.05" value="0"></label>
       <label>Stosszahl e <output id="o_e"></output><input type="range" id="e" min="0" max="1" step="0.05" value="1"></label>
     </div>
-    <div class="btns">
+    <div class="presets" role="group" aria-label="Stossart wählen">
       <button data-e="1">Elastisch</button>
       <button data-e="0.5">Inelastisch</button>
       <button data-e="0">Vollkommen inelastisch</button>
-      <button id="replay">↻ Nochmal</button>
+      <button id="replay">Nochmal abspielen</button>
     </div>
-    <div class="stats">
-      <div class="stat"><div>p vorher</div><strong id="s_p0"></strong></div>
-      <div class="stat"><div>p nachher</div><strong id="s_p1"></strong></div>
-      <div class="stat"><div>E<sub>kin</sub> vorher</div><strong id="s_e0"></strong></div>
-      <div class="stat"><div>E<sub>kin</sub> nachher</div><strong id="s_e1"></strong></div>
-      <div class="stat"><div>Energieverlust</div><strong id="s_loss"></strong></div>
+    <div class="readout">
+      <div>
+        <h4>Gesamtimpuls vorher und nachher</h4>
+        <div class="momentum" id="r_p"></div>
+      </div>
+      <div>
+        <h4>Kinetische Energie nach dem Stoss</h4>
+        <div class="ebar" aria-hidden="true"><i class="kept" id="r_kept"></i><i class="lost" id="r_lost"></i></div>
+        <div class="elegend"><span>Erhalten <b id="r_e1"></b></span><span>Umgewandelt <b id="r_loss"></b></span><span>Vorher <b id="r_e0"></b></span></div>
+      </div>
     </div>
   </div>
 </section>
 
 <section id="messdaten">
-  <h2><small>03 · Messdaten</small>Unsere Messungen</h2>
-  <p class="sub">Versuchsaufbau: <em>[hier kurz beschreiben, z. B. Luftkissenbahn mit zwei Gleitern, Geschwindigkeitsmessung per Lichtschranke]</em></p>
-  <div class="demo" id="demoNote">Platzhalter: Die Tabelle zeigt Beispielwerte, bis die echten Messdaten eingetragen sind.</div>
+  <h2>Unsere Messungen</h2>
+  <div class="text">
+    <p class="setup">Versuchsaufbau: hier kurz beschreiben, zum Beispiel Luftkissenbahn mit zwei Gleitern, Geschwindigkeitsmessung über Lichtschranken vor und nach dem Stoss.</p>
+  </div>
+  <div class="demo" id="demoNote"><b>Beispielwerte</b><span>Die Tabelle und die Diagramme zeigen Platzhalter, bis die echten Messdaten eingetragen sind.</span></div>
   <div class="tablewrap"><table id="table">
     <thead><tr>
-      <th>#</th><th>Typ</th><th>m₁ / kg</th><th>m₂ / kg</th><th>v₁ / m·s⁻¹</th><th>v₂ / m·s⁻¹</th><th>v₁' / m·s⁻¹</th><th>v₂' / m·s⁻¹</th>
-      <th>p / kg·m·s⁻¹</th><th>p' / kg·m·s⁻¹</th><th>ΔE<sub>kin</sub> / %</th><th>e</th>
+      <th>Nr.</th><th>Stossart</th>
+      <th>m₁<small>kg</small></th><th>m₂<small>kg</small></th>
+      <th>v₁<small>m/s</small></th><th>v₂<small>m/s</small></th>
+      <th>v₁′<small>m/s</small></th><th>v₂′<small>m/s</small></th>
+      <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th>
+      <th class="calc">ΔE<sub>kin</sub><small>%</small></th><th class="calc">e<small>&nbsp;</small></th>
     </tr></thead><tbody></tbody>
   </table></div>
-  <p class="note">p, p', ΔE<sub>kin</sub> und e werden automatisch aus <code>data/messungen.csv</code> berechnet.</p>
+  <p class="note">Die hinterlegten Spalten werden aus den Messwerten berechnet.</p>
 </section>
 
 <section id="auswertung">
-  <h2><small>04 · Auswertung</small>Was die Daten zeigen</h2>
-  <p class="sub">Impuls vor und nach dem Stoss sollte auf der Diagonalen liegen. Der Energieverlust trennt die Stossarten deutlich.</p>
-  <div class="grid">
-    <div class="chart"><canvas id="chartP"></canvas></div>
-    <div class="chart"><canvas id="chartE"></canvas></div>
+  <h2>Was die Daten zeigen</h2>
+  <div class="text"><p>Liegen die Punkte im ersten Diagramm auf der Diagonalen, ist der Impuls erhalten. Die Energie und die Stosszahl trennen dann die drei Stossarten voneinander.</p></div>
+  <div class="legend" id="legend"></div>
+  <div class="charts">
+    <figure class="chart"><h3>Impuls vor und nach dem Stoss</h3><p>Gestrichelt: perfekte Impulserhaltung p′ = p</p><div class="box"><canvas id="chartP" role="img" aria-label="Streudiagramm Impuls vorher gegen nachher"></canvas></div></figure>
+    <figure class="chart"><h3>Kinetische Energie je Versuch</h3><p>Grau vor dem Stoss, farbig danach, in mJ</p><div class="box"><canvas id="chartE" role="img" aria-label="Balkendiagramm kinetische Energie vor und nach dem Stoss"></canvas></div></figure>
+    <figure class="chart wide"><h3>Stosszahl je Versuch</h3><p>1 heisst elastisch, 0 vollkommen inelastisch</p><div class="box"><canvas id="chartR" role="img" aria-label="Balkendiagramm Stosszahl je Versuch"></canvas></div></figure>
   </div>
-  <div class="chart" style="margin-top:16px"><canvas id="chartR"></canvas></div>
 </section>
 
 </main>
 
-<footer class="wrap">
-  Physik-Praktikum · Stösse · <span id="year"></span>
-</footer>
+<footer><div class="wrap">Physikpraktikum, Versuch Stösse, <span id="year"></span></div></footer>
 
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/chart.umd.min.js"></script>
 <script>
-// ---------- Formeln ----------
+// ===== Hilfen =====
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (x,d=3)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+$('year').textContent = new Date().getFullYear();
 document.querySelectorAll('[data-tex]').forEach(el=>{
-  try{ katex.render(el.dataset.tex, el, {displayMode:true, throwOnError:false}); }catch(_){ el.textContent=el.dataset.tex; }
+  try{ katex.render(el.dataset.tex, el, {displayMode:true, throwOnError:false}); }catch(_){ el.textContent = el.dataset.tex; }
 });
-document.getElementById('year').textContent = new Date().getFullYear();
 
-const COL = {a:'#4cc9f0', b:'#f72585', c:'#ffd166', muted:'#9aa3c7', line:'#26305a'};
-const TYPCOL = t => t.startsWith('voll') ? COL.b : t.startsWith('in') ? COL.c : COL.a;
-const fmt = (x,d=3)=> (Math.round(x*10**d)/10**d).toFixed(d);
+const TYPES = [
+  {key:'elastisch', label:'Elastisch', color:'--c-el', shape:'circle'},
+  {key:'inelastisch', label:'Inelastisch', color:'--c-in', shape:'triangle'},
+  {key:'vollkommen inelastisch', label:'Vollkommen inelastisch', color:'--c-vi', shape:'rectRot'},
+];
+const typeOf = t => TYPES.find(x=>x.key===t.toLowerCase()) || TYPES[1];
 
-// ---------- Stossphysik ----------
+// ===== Physik =====
 function collide(m1,m2,v1,v2,e){
-  const P = m1*v1 + m2*v2, M = m1+m2;
-  return [(P - m2*e*(v1-v2))/M, (P + m1*e*(v1-v2))/M];
+  const P=m1*v1+m2*v2, M=m1+m2;
+  return [(P-m2*e*(v1-v2))/M, (P+m1*e*(v1-v2))/M];
 }
+// Position beider Gleiter (Mittelpunkte in m) zur Zeit t
+function positions(s,t){
+  const rel=s.v1-s.v2, tc = rel>0 ? (s.x2-s.x1-s.gap)/rel : Infinity;
+  if(t<tc) return [s.x1+s.v1*t, s.x2+s.v2*t, false];
+  const c1=s.x1+s.v1*tc, c2=s.x2+s.v2*tc, d=t-tc;
+  return [c1+s.u1*d, c2+s.u2*d, true];
+}
+function gliderLen(m){ return 0.09 + 0.07*Math.sqrt(m); } // Länge in m, wächst mit Masse
 
-// ---------- Animation auf einer Bahn ----------
-function makeTrack(canvas, getState){
-  const ctx = canvas.getContext('2d');
-  let t0 = performance.now();
-  function size(){ const r=canvas.getBoundingClientRect(), d=devicePixelRatio||1; canvas.width=r.width*d; canvas.height=r.height*d; ctx.setTransform(d,0,0,d,0,0); }
-  size(); addEventListener('resize', size);
-  function frame(now){
-    const W=canvas.clientWidth, H=canvas.clientHeight, s=getState();
-    const T = ((now - t0)/1000) % s.loop;
+// ===== Luftkissenbahn zeichnen =====
+function makeBench(canvas, getState){
+  const ctx=canvas.getContext('2d');
+  let t0=performance.now(), W=0, H=0;
+  function resize(){
+    const r=canvas.getBoundingClientRect(), d=devicePixelRatio||1;
+    W=r.width; H=r.height; canvas.width=W*d; canvas.height=H*d; ctx.setTransform(d,0,0,d,0,0);
+  }
+  resize(); addEventListener('resize', resize);
+  const L=1.6, pad=12;
+  function draw(t){
+    const s=getState(), sc=(W-2*pad)/L, X=x=>pad+x*sc;
+    const railY=H*0.72, gh=Math.min(34,H*0.16);
     ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle=COL.line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,H*.78); ctx.lineTo(W,H*.78); ctx.stroke();
-    const scale = W/1.6; // 1.6 m Bahn
-    const r1 = 14+20*Math.sqrt(s.m1), r2 = 14+20*Math.sqrt(s.m2);
-    // Positionen in Metern; Stoss bei t = tc
-    const gap = (r1+r2)/scale, x1s=0.3, x2s=0.8;
-    const rel = s.v1 - s.v2;
-    const tc = rel>0 ? (x2s-x1s-gap)/rel : Infinity;
-    let x1,x2;
-    if(T<tc){ x1=x1s+s.v1*T; x2=x2s+s.v2*T; }
-    else { const xc1=x1s+s.v1*tc, xc2=x2s+s.v2*tc, dt=T-tc; x1=xc1+s.u1*dt; x2=xc2+s.u2*dt; }
-    const flash = T>=tc && T-tc<0.12;
-    const y = H*.78;
-    [[x1,r1,COL.a,'m₁'],[x2,r2,COL.b,'m₂']].forEach(([x,r,c,l])=>{
-      const px = x*scale;
-      ctx.fillStyle=c; ctx.shadowColor=c; ctx.shadowBlur=flash?30:12;
-      ctx.beginPath(); ctx.roundRect(px-r, y-2*r, 2*r, 2*r, 8); ctx.fill();
-      ctx.shadowBlur=0; ctx.fillStyle='#06101f'; ctx.font='600 13px Space Grotesk'; ctx.textAlign='center'; ctx.fillText(l, px, y-r+5);
+    const muted=css('--muted'), rail=css('--rail'), gate=css('--gate');
+    // Schiene mit Luftlöchern
+    ctx.fillStyle=rail; ctx.fillRect(pad,railY,W-2*pad,10);
+    ctx.fillStyle=css('--paper');
+    for(let x=pad+8;x<W-pad-4;x+=14){ ctx.beginPath(); ctx.arc(x,railY+5,1.4,0,7); ctx.fill(); }
+    ctx.fillStyle=rail; ctx.fillRect(pad+20,railY+10,5,H-railY-12); ctx.fillRect(W-pad-25,railY+10,5,H-railY-12);
+    // Lichtschranken
+    ctx.font='500 14px "Barlow Condensed",sans-serif'; ctx.textAlign='center';
+    [[0.42,'Lichtschranke 1'],[1.18,'Lichtschranke 2']].forEach(([gx,lab])=>{
+      const x=X(gx), top=railY-gh-30;
+      ctx.strokeStyle=muted; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x-10,railY); ctx.lineTo(x-10,top); ctx.lineTo(x+10,top); ctx.lineTo(x+10,railY); ctx.stroke();
+      ctx.setLineDash([3,3]); ctx.strokeStyle=gate; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x-10,railY-gh-14); ctx.lineTo(x+10,railY-gh-14); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=muted; ctx.fillText(lab,x,top-8);
     });
-    requestAnimationFrame(frame);
+    // Stroboskop-Spur + Gleiter
+    const l1=gliderLen(s.m1), l2=gliderLen(s.m2), dt=0.1;
+    const col1=css('--c-el'), col2=css('--c-vi');
+    function glider(xc,len,col,alpha,label){
+      const x=X(xc-len/2), w=len*sc, y=railY-gh;
+      ctx.globalAlpha=alpha;
+      if(!label){ ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.beginPath(); ctx.roundRect(x+.75,y+.75,w-1.5,gh-1.5,4); ctx.stroke(); }
+      else{
+        ctx.fillStyle=col; ctx.beginPath(); ctx.roundRect(x,y,w,gh,4); ctx.fill();
+        ctx.fillRect(x+w*0.5-1.5,y-18,3,18); // Fahne, die die Lichtschranke unterbricht
+        ctx.fillStyle='#fff'; ctx.font='600 17px "Barlow Condensed",sans-serif'; ctx.textAlign='center'; ctx.fillText(label,x+w/2,y+gh/2+6);
+      }
+      ctx.globalAlpha=1;
+    }
+    let la=null, lb=null;
+    for(let k=Math.floor(t/dt);k>=1;k--){
+      const tk=t-k*dt; if(tk<0) continue;
+      const [a,b]=positions(s,tk), al=Math.max(0.14,0.6-k*0.03);
+      // stehende Gleiter nicht übereinander stapeln
+      if(a>-0.1&&a<L+0.1&&(la===null||Math.abs(a-la)>0.015)){ glider(a,l1,col1,al); la=a; }
+      if(b>-0.1&&b<L+0.1&&(lb===null||Math.abs(b-lb)>0.015)){ glider(b,l2,col2,al); lb=b; }
+    }
+    const [a,b,hit]=positions(s,t);
+    glider(a,l1,col1,1,'m₁'); glider(b,l2,col2,1,'m₂');
+    // Geschwindigkeitspfeile unter der Schiene
+    const [va,vb]= hit ? [s.u1,s.u2] : [s.v1,s.v2];
+    [[a,va,col1],[b,vb,col2]].forEach(([x,v,c])=>{
+      if(Math.abs(v)<0.01) return;
+      const x0=X(x), len=v*sc*0.4, y=railY+26;
+      ctx.strokeStyle=c; ctx.fillStyle=c; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x0+len,y); ctx.stroke();
+      const dir=Math.sign(len); ctx.beginPath(); ctx.moveTo(x0+len+dir*2,y); ctx.lineTo(x0+len-dir*7,y-5); ctx.lineTo(x0+len-dir*7,y+5); ctx.fill();
+    });
+  }
+  function frame(now){
+    const s=getState();
+    const t = reduceMotion ? s.loop*0.92 : ((now-t0)/1000)%s.loop;
+    draw(t);
+    if(!reduceMotion) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  return { restart(){ t0=performance.now(); } };
+  return { restart(){ t0=performance.now(); if(reduceMotion) requestAnimationFrame(frame); } };
 }
-
-// Hero: wechselt zwischen den drei Stossarten
-let heroE = 1, heroI = 0;
-const heroState = ()=>{ const [u1,u2]=collide(0.2,0.3,0.6,0,heroE); return {m1:.2,m2:.3,v1:.6,v2:0,u1,u2,loop:3}; };
-const hero = makeTrack(document.getElementById('hero'), heroState);
-setInterval(()=>{ heroI=(heroI+1)%3; heroE=[1,.5,0][heroI]; hero.restart(); }, 3000);
-
-// Simulation
-const ids=['m1','m2','v1','v2','e'], el=Object.fromEntries(ids.map(i=>[i,document.getElementById(i)]));
-let sim;
-function simState(){
-  const m1=+el.m1.value, m2=+el.m2.value, v1=+el.v1.value, v2=+el.v2.value, e=+el.e.value;
+function baseState(m1,m2,v1,v2,e,loop){
   const [u1,u2]=collide(m1,m2,v1,v2,e);
-  return {m1,m2,v1,v2,u1,u2,e,loop:4};
+  const gap=(gliderLen(m1)+gliderLen(m2))/2;
+  return {m1,m2,v1,v2,u1,u2,e,x1:0.16,x2:0.85,gap,loop};
 }
-function updateStats(){
+
+// Hero: wechselt durch die drei Stossarten
+const heroCases=[
+  {e:1, name:'Elastischer Stoss', es:'e = 1'},
+  {e:0.5, name:'Inelastischer Stoss', es:'e = 0,5'},
+  {e:0, name:'Vollkommen inelastischer Stoss', es:'e = 0'},
+];
+let heroI=0;
+const hero=makeBench($('hero'),()=>baseState(0.2,0.3,0.55,0,heroCases[heroI].e,3.2));
+function setHero(i){ heroI=i; $('heroType').textContent=heroCases[i].name; $('heroE').textContent=heroCases[i].es; hero.restart(); }
+if(!reduceMotion) setInterval(()=>setHero((heroI+1)%3),3200);
+
+// Kleine Weg-Zeit-Diagramme für die drei Fälle
+document.querySelectorAll('[data-strobe]').forEach(svg=>{
+  const e=+svg.dataset.strobe, s=baseState(0.3,0.3,0.6,0,e,0);
+  const W=300,H=120,l=22,b=H-20,T=2.0,Xmax=1.6;
+  const px=t=>l+t/T*(W-l-6), py=x=>b-x/Xmax*(b-8);
+  const line=(i,c)=>{ const pts=[]; for(let t=0;t<=T+1e-9;t+=0.02){ const hl=gliderLen(0.3)/2; pts.push(px(t).toFixed(1)+','+py(positions(s,t)[i]+(i?-hl:hl)).toFixed(1)); } return `<polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/>`; };
+  const tc=(s.x2-s.x1-s.gap)/(s.v1-s.v2);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML=`
+    <line x1="${l}" y1="${b}" x2="${W}" y2="${b}" stroke="var(--muted)" stroke-width="1"/>
+    <line x1="${l}" y1="${b}" x2="${l}" y2="2" stroke="var(--muted)" stroke-width="1"/>
+    <line x1="${px(tc)}" y1="${b}" x2="${px(tc)}" y2="6" stroke="var(--rule)" stroke-dasharray="3 3"/>
+    <text x="${px(tc)}" y="${b+15}" text-anchor="middle" font-family="Barlow Condensed" font-size="13" fill="var(--muted)">Stoss</text>
+    <text x="${W}" y="${b+15}" text-anchor="end" font-family="Barlow Condensed" font-size="13" fill="var(--muted)">t</text>
+    <text x="${l-8}" y="12" text-anchor="end" font-family="Barlow Condensed" font-size="13" fill="var(--muted)">x</text>
+    ${line(1,'var(--c-vi)')}${line(0,'var(--c-el)')}
+    <text x="${px(0.05)}" y="${py(s.x1)+16}" font-family="Barlow Condensed" font-size="13" fill="var(--ink-2)">m₁</text>
+    <text x="${px(0.05)}" y="${py(s.x2)-6}" font-family="Barlow Condensed" font-size="13" fill="var(--ink-2)">m₂</text>`;
+});
+
+// ===== Simulation =====
+const ids=['m1','m2','v1','v2','e'], el=Object.fromEntries(ids.map(i=>[i,$(i)]));
+const simState=()=>baseState(+el.m1.value,+el.m2.value,+el.v1.value,+el.v2.value,+el.e.value,4);
+const sim=makeBench($('simCanvas'),simState);
+function updateSim(){
   const s=simState();
-  ids.forEach(i=>document.getElementById('o_'+i).textContent=(+el[i].value).toFixed(2));
+  ids.forEach(i=>$('o_'+i).textContent=(+el[i].value).toFixed(2).replace('.',','));
   const p0=s.m1*s.v1+s.m2*s.v2, p1=s.m1*s.u1+s.m2*s.u2;
   const E0=.5*s.m1*s.v1**2+.5*s.m2*s.v2**2, E1=.5*s.m1*s.u1**2+.5*s.m2*s.u2**2;
-  s_p0.textContent=fmt(p0)+' Ns'; s_p1.textContent=fmt(p1)+' Ns';
-  s_e0.textContent=fmt(E0*1000,1)+' mJ'; s_e1.textContent=fmt(E1*1000,1)+' mJ';
-  s_loss.textContent=E0>0? fmt((1-E1/E0)*100,1)+' %' : '–';
-  document.querySelectorAll('[data-e]').forEach(b=>b.classList.toggle('on', +b.dataset.e===s.e));
+  const keep=E0>0?E1/E0:1;
+  $('r_p').innerHTML=`${fmt(p0)} <span>→</span> ${fmt(p1)} <span>kg·m/s</span>`;
+  $('r_kept').style.width=(keep*100)+'%'; $('r_lost').style.width=((1-keep)*100)+'%';
+  $('r_e0').textContent=fmt(E0*1000,1).replace('.',',')+' mJ';
+  $('r_e1').textContent=fmt(keep*100,0)+' %';
+  $('r_loss').textContent=fmt((1-keep)*100,0)+' %';
+  document.querySelectorAll('[data-e]').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.e===s.e));
 }
-sim = makeTrack(document.getElementById('simCanvas'), simState);
-ids.forEach(i=>el[i].addEventListener('input',()=>{updateStats(); sim.restart();}));
-document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{el.e.value=b.dataset.e; updateStats(); sim.restart();});
-replay.onclick=()=>sim.restart();
-updateStats();
+ids.forEach(i=>el[i].addEventListener('input',()=>{updateSim(); sim.restart();}));
+document.querySelectorAll('[data-e]').forEach(b=>b.addEventListener('click',()=>{el.e.value=b.dataset.e; updateSim(); sim.restart();}));
+$('replay').addEventListener('click',()=>sim.restart());
+updateSim();
 
-// ---------- Messdaten ----------
+// ===== Messdaten =====
+// Die Daten kommen aus data/messungen.csv. FALLBACK wird nur benutzt, wenn die Datei nicht geladen werden kann
+// (z. B. beim Öffnen der index.html direkt vom Rechner ohne Server).
 const FALLBACK = `versuch,typ,m1,m2,v1,v2,v1_nach,v2_nach
 1,elastisch,0.200,0.200,0.52,0.00,0.01,0.50
 2,elastisch,0.200,0.400,0.48,0.00,-0.15,0.31
@@ -267,42 +489,76 @@ function parse(csv){
     o.p0=o.m1*o.v1+o.m2*o.v2; o.p1=o.m1*o.v1_nach+o.m2*o.v2_nach;
     o.E0=.5*o.m1*o.v1**2+.5*o.m2*o.v2**2; o.E1=.5*o.m1*o.v1_nach**2+.5*o.m2*o.v2_nach**2;
     o.dE=(o.E1/o.E0-1)*100; o.e=-(o.v1_nach-o.v2_nach)/(o.v1-o.v2);
+    o.T=typeOf(o.typ);
     return o;
   });
 }
 
-function render(data){
-  demoNote.style.display = IS_DEMO ? '' : 'none';
+const shapeSVG={
+  circle:c=>`<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="${c}"/></svg>`,
+  triangle:c=>`<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 13 13H1Z" fill="${c}"/></svg>`,
+  rectRot:c=>`<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0 14 7 7 14 0 7Z" fill="${c}"/></svg>`,
+};
+
+let DATA=[], charts=[];
+function renderTable(data){
+  $('demoNote').style.display = IS_DEMO ? '' : 'none';
   document.querySelector('#table tbody').innerHTML = data.map(d=>`<tr>
-    <td>${d.versuch}</td><td style="color:${TYPCOL(d.typ)}">${d.typ}</td>
+    <td>${d.versuch}</td><td><span class="swatch" style="background:var(${d.T.color})"></span>${d.T.label}</td>
     <td>${fmt(d.m1)}</td><td>${fmt(d.m2)}</td><td>${fmt(d.v1,2)}</td><td>${fmt(d.v2,2)}</td>
     <td>${fmt(d.v1_nach,2)}</td><td>${fmt(d.v2_nach,2)}</td>
-    <td>${fmt(d.p0)}</td><td>${fmt(d.p1)}</td><td>${fmt(d.dE,1)}</td><td>${fmt(d.e,2)}</td></tr>`).join('');
-
-  Chart.defaults.color=COL.muted; Chart.defaults.borderColor=COL.line;
-  Chart.defaults.font.family='Space Grotesk';
-  const types=[...new Set(data.map(d=>d.typ))];
-  const maxP=Math.ceil(Math.max(...data.flatMap(d=>[d.p0,d.p1]))*1.15*20)/20;
-
-  new Chart(chartP,{type:'scatter',data:{datasets:[
-      ...types.map(t=>({label:t,data:data.filter(d=>d.typ===t).map(d=>({x:d.p0,y:d.p1,n:d.versuch})),backgroundColor:TYPCOL(t),pointRadius:7,pointHoverRadius:9})),
-      {label:'p = p\'',type:'line',data:[{x:0,y:0},{x:maxP,y:maxP}],borderColor:COL.muted,borderDash:[6,6],pointRadius:0,borderWidth:1}
-    ]},options:{maintainAspectRatio:false,plugins:{title:{display:true,text:'Impuls vorher vs. nachher'},
-      tooltip:{callbacks:{label:c=>c.raw.n?`Versuch ${c.raw.n}: p=${fmt(c.raw.x)}, p'=${fmt(c.raw.y)}`:''}}},
-      scales:{x:{min:0,max:maxP,title:{display:true,text:'p vorher / kg·m/s'}},y:{min:0,max:maxP,title:{display:true,text:"p nachher / kg·m/s"}}}}});
-
-  new Chart(chartE,{type:'bar',data:{labels:data.map(d=>'V'+d.versuch),datasets:[
-      {label:'E vorher',data:data.map(d=>d.E0*1000),backgroundColor:'rgba(154,163,199,.35)',borderRadius:4},
-      {label:'E nachher',data:data.map(d=>d.E1*1000),backgroundColor:data.map(d=>TYPCOL(d.typ)),borderRadius:4}
-    ]},options:{maintainAspectRatio:false,plugins:{title:{display:true,text:'Kinetische Energie (mJ)'}},scales:{y:{beginAtZero:true}}}});
-
-  new Chart(chartR,{type:'bar',data:{labels:data.map(d=>'V'+d.versuch+' · '+d.typ.replace('vollkommen inelastisch','vollk. inel.')),datasets:[
-      {label:'Stosszahl e',data:data.map(d=>d.e),minBarLength:4,backgroundColor:data.map(d=>TYPCOL(d.typ)),borderRadius:4}
-    ]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Stosszahl e je Versuch (1 = elastisch, 0 = vollkommen inelastisch)'}},
-      scales:{x:{min:0,max:1.1}}}});
+    <td class="calc">${fmt(d.p0)}</td><td class="calc">${fmt(d.p1)}</td><td class="calc">${fmt(d.dE,1)}</td><td class="calc">${fmt(d.e,2)}</td></tr>`).join('');
 }
 
-fetch('data/messungen.csv').then(r=>r.ok?r.text():Promise.reject()).catch(()=>FALLBACK).then(t=>render(parse(t)));
+function renderCharts(data){
+  charts.forEach(c=>c.destroy()); charts=[];
+  const ink=css('--ink'), ink2=css('--ink-2'), muted=css('--muted'), rule=css('--rule'), surface=css('--raised'), before=css('--c-before');
+  const present=TYPES.filter(t=>data.some(d=>d.T===t));
+  $('legend').innerHTML = present.map(t=>`<span>${shapeSVG[t.shape](css(t.color))}${t.label}</span>`).join('')
+    + `<span><svg viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="3" fill="${before}"/></svg>Energie vor dem Stoss</span>`;
+
+  Chart.defaults.font.family='"Barlow Condensed",sans-serif'; Chart.defaults.font.size=14;
+  Chart.defaults.color=muted; Chart.defaults.borderColor=rule;
+  const tooltip={backgroundColor:ink,titleColor:surface,bodyColor:surface,titleFont:{weight:'600',size:15},bodyFont:{size:14},padding:10,cornerRadius:4,displayColors:false};
+  const grid={color:rule,drawTicks:false}, ticks={padding:8};
+  const label=d=>`Versuch ${d.versuch}, ${d.T.label}`;
+  const anim=reduceMotion?false:{duration:500};
+
+  const maxP=Math.ceil(Math.max(...data.flatMap(d=>[d.p0,d.p1]))*1.12*20)/20;
+  charts.push(new Chart($('chartP'),{type:'scatter',
+    data:{datasets:[
+      {data:[{x:0,y:0},{x:maxP,y:maxP}],type:'line',borderColor:muted,borderDash:[5,5],borderWidth:1,pointRadius:0,pointHitRadius:0,order:2},
+      ...present.map(t=>({label:t.label,data:data.filter(d=>d.T===t).map(d=>({x:d.p0,y:d.p1,d})),
+        pointStyle:t.shape,backgroundColor:css(t.color),borderColor:surface,borderWidth:2,pointRadius:8,pointHoverRadius:10,pointHitRadius:14,order:1}))
+    ]},
+    options:{maintainAspectRatio:false,animation:anim,
+      plugins:{legend:{display:false},tooltip:{...tooltip,filter:i=>!!i.raw.d,callbacks:{title:i=>label(i[0].raw.d),label:i=>[`p = ${fmt(i.raw.x)} kg·m/s`,`p′ = ${fmt(i.raw.y)} kg·m/s`,`Abweichung ${fmt((i.raw.y/i.raw.x-1)*100,1)} %`]}}},
+      scales:{x:{min:0,max:maxP,grid,ticks,border:{display:false},title:{display:true,text:'p vorher in kg·m/s',color:ink2}},
+              y:{min:0,max:maxP,grid,ticks,border:{display:false},title:{display:true,text:'p nachher in kg·m/s',color:ink2}}}}}));
+
+  const barStyle={borderRadius:{topLeft:4,topRight:4},borderSkipped:'start',categoryPercentage:.72,barPercentage:.9};
+  charts.push(new Chart($('chartE'),{type:'bar',
+    data:{labels:data.map(d=>'V'+d.versuch),datasets:[
+      {label:'Vor dem Stoss',data:data.map(d=>d.E0*1000),backgroundColor:before,...barStyle},
+      {label:'Nach dem Stoss',data:data.map(d=>d.E1*1000),backgroundColor:data.map(d=>css(d.T.color)),...barStyle}
+    ]},
+    options:{maintainAspectRatio:false,animation:anim,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{...tooltip,callbacks:{title:i=>label(data[i[0].dataIndex]),label:i=>`${i.dataset.label}: ${fmt(i.raw,1)} mJ`,afterBody:i=>`Energieänderung ${fmt(data[i[0].dataIndex].dE,1)} %`}}},
+      scales:{x:{grid:{display:false},ticks,border:{color:rule}},y:{beginAtZero:true,grid,ticks,border:{display:false},title:{display:true,text:'E in mJ',color:ink2}}}}}));
+
+  charts.push(new Chart($('chartR'),{type:'bar',
+    data:{labels:data.map(d=>'Versuch '+d.versuch),datasets:[{label:'Stosszahl e',data:data.map(d=>Math.max(d.e,0)),
+      backgroundColor:data.map(d=>css(d.T.color)),borderRadius:{topRight:4,bottomRight:4},borderSkipped:'start',minBarLength:3,barPercentage:.75,categoryPercentage:.9}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,animation:anim,
+      plugins:{legend:{display:false},tooltip:{...tooltip,callbacks:{title:i=>label(data[i[0].dataIndex]),label:i=>`e = ${fmt(data[i.dataIndex].e,2)}`}}},
+      scales:{x:{min:0,max:1.05,grid,ticks:{...ticks,stepSize:.25},border:{display:false}},y:{grid:{display:false},ticks:{color:ink2},border:{color:rule}}}}}));
+}
+
+fetch('data/messungen.csv').then(r=>r.ok?r.text():Promise.reject()).catch(()=>FALLBACK).then(t=>{
+  DATA=parse(t); renderTable(DATA);
+  document.fonts.ready.then(()=>renderCharts(DATA));
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>DATA.length&&renderCharts(DATA));
 </script>
 </body>
 </html>
