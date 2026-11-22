@@ -78,7 +78,7 @@ h3{margin:0 0 22px;font:700 26px/1.15 Calibri, Carlito, "Segoe UI", sans-serif}
 
 /* Formeln */
 .formulas{margin-top:44px}
-.formulas .f{display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;border-top:1px solid var(--rule);padding:16px 0}
+.formulas .f{display:grid;grid-template-columns:160px minmax(0,1fr);align-items:center;border-top:1px solid var(--rule);padding:16px 0}
 .formulas .f:first-child{border-top:0}
 .formulas .f span{color:var(--ink-2);font-weight:700}
 .formula{overflow-x:auto;overflow-y:hidden}
@@ -173,6 +173,22 @@ td .swatch{margin-right:6px}
 @media (max-width:640px){.picker-in{padding:10px 16px 2px;flex-wrap:nowrap}.pick-groups{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.pick-g{flex-wrap:nowrap}.pick-info{padding:2px 16px 10px;font-size:13px}}
 #table tbody tr.sel td{background:color-mix(in srgb,var(--ink) 10%,transparent);font-weight:700}
 html{scroll-padding-top:120px}
+.masthead{padding-bottom:40px}
+#auswertung{padding-top:96px}
+@media (max-width:640px){.formulas .f{grid-template-columns:1fr}}
+details.more{border-top:1px solid var(--rule);margin-top:0}
+details.more:first-of-type{margin-top:36px}
+details.more:last-of-type{border-bottom:1px solid var(--rule)}
+details.more summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:15px 0;font-weight:700;font-size:16px;color:var(--ink)}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:"+";font-weight:400;font-size:22px;line-height:1;color:var(--muted);transition:transform .2s}
+details.more[open] summary::after{transform:rotate(45deg)}
+details.more > :not(summary){color:var(--ink-2);font-size:16px;line-height:1.65}
+details.more > p, details.more > ul{margin:0 0 20px}
+details.more ul{padding-left:20px}
+details.more .formulas{margin:0 0 16px}
+details.more .types-legend{margin:8px 0 22px}
+@media (prefers-reduced-motion: reduce){details.more summary::after{transition:none}}
 footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 .foot-in{max-width:1280px;margin:0 auto;padding:0 24px}
 </style>
@@ -182,9 +198,32 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <header class="masthead dark"><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
-  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Wähle eine Messung, und die ganze Seite folgt: der Stoss wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
+  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Wähle unten eine Messung aus der Tabelle, und die ganze Seite folgt: der Stoss wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
   <p class="meta">Messungen <b>13</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
 </div></header>
+
+
+<main>
+
+<section id="auswertung" class="dark">
+  <div class="col">
+    <h2>Unsere Stösse</h2>
+    <p class="lede">13 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken, und die ganze Seite zeigt diesen Stoss.</p>
+    <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
+  </div>
+  <figure class="wide">
+    <div class="tablewrap"><table id="table">
+      <thead><tr>
+        <th>Nr.</th><th>Stossart</th><th>Aufbau</th>
+        <th>v₁<small>m/s</small></th><th>v₂<small>m/s</small></th><th>v₁′<small>m/s</small></th><th>v₂′<small>m/s</small></th>
+        <th class="calc">e<small>&nbsp;</small></th><th class="calc">m₂/m₁<small>aus Δv</small></th>
+        <th>m₁<small>kg</small></th><th>m₂<small>kg</small></th>
+        <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th><th class="calc">ΔE<small>%</small></th>
+      </tr></thead><tbody></tbody>
+    </table></div>
+    <figcaption class="col-note">Geschwindigkeiten aus linearen Fits vor und nach dem Stoss. Hinterlegte Spalten sind berechnet.</figcaption>
+  </figure>
+</section>
 
 <nav class="picker" aria-label="Messung wählen">
   <div class="picker-in">
@@ -194,12 +233,31 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   <p class="pick-info" id="pickInfo"></p>
 </nav>
 
-<main>
-
 <section id="aufbau" class="tint">
   <div class="col">
-    <h2>Versuchsaufbau</h2>
-    <p class="lede">Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten. Beide Wagen tragen immer denselben Aufsatz: Feder, Schaumstoffkeil oder Klett. Die Grafik spielt die oben gewählte Messung ab. Gefüllt sind die geglätteten Messwerte, gestrichelt umrandet ist, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</p>
+    <h2>Der Stoss</h2>
+    <p class="lede">Die gewählte Messung, abgespielt aus den geglätteten Messwerten. Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</p>
+    <details class="more">
+      <summary>Versuchsaufbau</summary>
+      <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Wagen 1 ist der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
+    </details>
+    <details class="more">
+      <summary>Theorie: Impulserhaltung und Stosszahl</summary>
+      <div class="formulas">
+        <div class="f"><span>Impuls</span><div class="formula" data-tex="m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'"></div></div>
+        <div class="f"><span>Stosszahl</span><div class="formula" data-tex="e = -\frac{v_1' - v_2'}{v_1 - v_2}"></div></div>
+        <div class="f"><span>Massenverhältnis</span><div class="formula" data-tex="\frac{m_2}{m_1} = -\frac{v_1' - v_1}{v_2' - v_2}"></div></div>
+      </div>
+      <div class="types-legend">
+        <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>Feder, e ≈ 1, E<sub>kin</sub> bleibt erhalten</div>
+        <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>Schaumstoffkeil, 0 &lt; e &lt; 1</div>
+        <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>Klett, e = 0, fahren gemeinsam weiter</div>
+      </div>
+    </details>
+    <details class="more">
+      <summary>Annahmen der Wiedergabe</summary>
+      <p>Die Orte sind über 0,15 s geglättet (lokale Parabel), damit nichts zittert. Unter 0,20 m misst Sensor 2 nichts mehr; dort wird Wagen 2 mit seiner letzten Geschwindigkeit weitergeführt und bleibt am Schienenende stehen. Die Geschwindigkeiten vorher und nachher stammen aus linearen Fits. Das Massenverhältnis folgt allein aus der Impulserhaltung, ohne gewogene Massen.</p>
+    </details>
   </div>
   <figure class="wide">
     <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Die gewählte Messung wird abgespielt, das Federmodell als Umriss."></canvas>
@@ -219,28 +277,21 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </figure>
 </section>
 
-<section id="theorie" class="dark">
-  <div class="col">
-    <h2>Grundlagen</h2>
-    <p class="lede">Vier Beziehungen tragen die ganze Auswertung. Wagen 1 ist immer der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
-    <div class="formulas">
-      <div class="f"><span>Impuls</span><div class="formula" data-tex="m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'"></div></div>
-      <div class="f"><span>Stosszahl</span><div class="formula" data-tex="e = -\frac{v_1' - v_2'}{v_1 - v_2}"></div></div>
-      <div class="f"><span>Kraftstoss</span><div class="formula" data-tex="\Delta p = \int F\,\mathrm dt = \bar F\,\Delta t"></div></div>
-      <div class="f"><span>Ableitungen</span><div class="formula" data-tex="v = \frac{\mathrm dx}{\mathrm dt},\quad a = \frac{\mathrm dv}{\mathrm dt}"></div></div>
-    </div>
-    <div class="types-legend">
-      <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>beide Wagen mit Feder, e ≈ 1, E<sub>kin</sub> bleibt erhalten</div>
-      <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>beide mit Schaumstoffkeil, 0 &lt; e &lt; 1</div>
-      <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>beide mit Klett, e = 0, fahren gemeinsam weiter</div>
-    </div>
-  </div>
-</section>
-
 <section id="ableitung">
   <div class="col">
     <h2>Von x(t) zu v(t) und a(t)</h2>
-    <p class="lede">Die Sensoren liefern nur den Ort. Die Geschwindigkeit ist die Steigung von x(t), die Beschleunigung die Steigung von v(t). Fahr mit der Maus oder dem Regler über die Zeitachse und lies die Tangenten ab.</p>
+    <p class="lede">Die Sensoren liefern nur den Ort. Fahr mit der Maus oder dem Regler über die Zeitachse und lies die Tangenten ab.</p>
+    <details class="more">
+      <summary>Theorie: Ableitungen und Kraftstoss</summary>
+      <div class="formulas">
+        <div class="f"><span>Ableitungen</span><div class="formula" data-tex="v = \frac{\mathrm dx}{\mathrm dt},\quad a = \frac{\mathrm dv}{\mathrm dt}"></div></div>
+        <div class="f"><span>Kraftstoss</span><div class="formula" data-tex="\Delta p = \int F\,\mathrm dt = m \int a\,\mathrm dt = m\,\Delta v"></div></div>
+      </div>
+    </details>
+    <details class="more">
+      <summary>Annahmen</summary>
+      <p>Die Ableitungen kommen aus einer Parabel, die in einem Fenster von 0,15 s (31 Messpunkte) an x(t) angepasst wird (Savitzky-Golay). Als Stoss gilt die Zeit, in der |a₁| über 10 % seines Maximums liegt. Ohne Massen lässt sich der Kraftstoss nur pro Masse prüfen: die Fläche unter a(t) muss Δv aus den Fits ergeben.</p>
+    </details>
   </div>
   <figure class="wide">
     <div class="dbar" style="margin-top:0">
@@ -261,7 +312,18 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <section id="modell" class="tint">
   <div class="col">
     <h2>Federmodell</h2>
-    <p class="lede">Nachbau unseres Berkeley-Madonna-Modells: Berühren sich die Wagen, drückt die Feder mit F = k·Δ, sonst wirkt keine Kraft. Gestartet wird mit Ort und Geschwindigkeit der oben gewählten Messung. Mit k = 1000 N/m dauert der Stoss im Modell nur Hundertstelsekunden, gemessen sind rund 0,2 s. Die reine Feder gibt alle Energie zurück, sagt also immer e = 1 voraus. Für Schaumstoff und Klett lässt sich als Erweiterung eine Dämpfung c zuschalten.</p>
+    <p class="lede">Nachbau unseres Berkeley-Madonna-Modells, gestartet mit Ort und Geschwindigkeit der gewählten Messung.</p>
+    <details class="more">
+      <summary>Annahmen des Modells</summary>
+      <ul>
+        <li>Kraft nur bei Berührung: F = k·Δ, wobei Δ die Stauchung gegenüber dem Abstand beim Erstkontakt ist (aus der Messung).</li>
+        <li>Keine Reibung, keine Kraft ausserhalb des Stosses, keine Schienenenden.</li>
+        <li>Die reine Feder gibt alle Energie zurück, sagt also immer e = 1 voraus. Mit k = 1000 N/m dauert der Stoss nur Hundertstelsekunden, gemessen sind rund 0,2 s.</li>
+        <li>Erweiterung, nicht im Original: eine Dämpfung c, die nur während der Stauchung bremst. Damit lassen sich Schaumstoff und Klett annähern.</li>
+        <li>Die Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</li>
+      </ul>
+      <div class="formulas"><div class="f"><span>Bewegung</span><div class="formula" data-tex="m_1\ddot x_1 = F,\quad m_2\ddot x_2 = -F,\quad F = k\,\Delta + c\,\dot\Delta"></div></div></div>
+    </details>
   </div>
   <figure class="wide">
     <div class="ctl">
@@ -270,7 +332,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.1" max="1.5" step="0.01" value="0.25"></label>
       <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.1" max="1.5" step="0.01" value="0.5"></label>
     </div>
-    <p class="note missing" id="modelMassNote">Die Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
+    <p class="note missing" id="modelMassNote">Massen angenommen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
     <p class="callout" id="modelE"></p>
     <div class="charts2">
       <div><div class="slabel">Ort: Modell und Messung</div><div class="legend" id="lgMX"></div><div class="box" style="height:300px"><canvas id="chMX" role="img" aria-label="Modell und Messung, Ort gegen Zeit"></canvas></div></div>
@@ -279,41 +341,20 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </figure>
 </section>
 
-<section id="auswertung">
+<section id="ueberblick">
   <div class="col">
-    <h2>Alle Messungen</h2>
-    <p class="lede">Für jede Stossart vier Aufbauten: leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken wählt die Messung für die ganze Seite.</p>
-    <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
-  </div>
-  <figure class="wide">
-    <div class="tablewrap"><table id="table">
-      <thead><tr>
-        <th>Nr.</th><th>Stossart</th><th>Aufbau</th>
-        <th>v₁<small>m/s</small></th><th>v₂<small>m/s</small></th><th>v₁′<small>m/s</small></th><th>v₂′<small>m/s</small></th>
-        <th class="calc">e<small>&nbsp;</small></th><th class="calc">m₂/m₁<small>aus Δv</small></th>
-        <th>m₁<small>kg</small></th><th>m₂<small>kg</small></th>
-        <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th><th class="calc">ΔE<small>%</small></th>
-      </tr></thead><tbody></tbody>
-    </table></div>
-    <figcaption class="col-note">Geschwindigkeiten aus linearen Fits vor und nach dem Stoss. Hinterlegte Spalten sind berechnet.</figcaption>
-  </figure>
-
-  <div class="col" style="margin-top:160px">
-    <h3>Massenverhältnis aus der Impulserhaltung</h3>
-    <p class="lede">Ohne gewogene Massen lässt sich trotzdem prüfen, ob die Messungen zur Impulserhaltung passen: Sie verlangt m₂/m₁ = −Δv₁/Δv₂. Die Punkte sollten auf den Linien 2, 1 und ½ ihres Aufbaus liegen.</p>
+    <h2>Überblick</h2>
+    <p class="lede">Alle Messungen auf einen Blick: Liegen die Massenverhältnisse aus der Impulserhaltung auf den Linien 2, 1 und ½ ihres Aufbaus?</p>
   </div>
   <figure class="mid">
     <div class="legend" id="lgTypes"></div>
     <div class="box" style="height:380px"><canvas id="chM" role="img" aria-label="Massenverhältnis je Messung"></canvas></div>
   </figure>
-
   <div id="pFigure">
-    <div class="col" style="margin-top:160px"><h3>Impuls vor und nach dem Stoss</h3><p class="lede" id="pSub"></p></div>
+    <div class="col" style="margin-top:120px"><h3>Impuls vor und nach dem Stoss</h3><p class="lede" id="pSub"></p></div>
     <figure class="mid"><div class="box" style="height:340px"><canvas id="chP" role="img" aria-label="Impuls vorher gegen nachher"></canvas></div></figure>
   </div>
 </section>
-
-
 </main>
 <footer class="dark black"><div class="foot-in">Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</div></footer>
 

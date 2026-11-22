@@ -16,7 +16,7 @@ Seite: https://christiandavidfrey.github.io/physik-stoesse/
 
 ## Aufbau der Seite
 
-Oben wählt man eine Messung (Link direkt auf eine Messung: `#m7`). Alle Abschnitte folgen der Auswahl: Die Aufbau-Grafik spielt den Stoss aus den geglätteten Messwerten ab und zeigt das Federmodell als gestrichelten Umriss, darunter folgen Ableitung x → v → a und das Federmodell (k, optional Dämpfung c, Massen).
+Zuerst kommt die Tabelle aller Stösse; ein Klick auf eine Zeile (oder die Leiste darunter, Link direkt: `#m7`) wählt die Messung. Alle Abschnitte folgen der Auswahl, Theorie und Annahmen sind dort jeweils einklappbar: Die Aufbau-Grafik spielt den Stoss aus den geglätteten Messwerten ab und zeigt das Federmodell als gestrichelten Umriss, darunter folgen Ableitung x → v → a und das Federmodell (k, optional Dämpfung c, Massen).
 
 ## Aufsätze
 
