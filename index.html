@@ -125,12 +125,13 @@ p{margin:0 0 14px}
 .detail-head h3{font-size:34px;margin:0}
 .detail-head span{font:500 19px "Barlow Condensed",sans-serif;color:var(--ink-2)}
 .lab{background:var(--raised);border:1px solid var(--rule);border-radius:6px;padding:18px 18px 20px;margin-top:14px}
-.lab canvas.track{display:block;width:100%;height:120px}
+.lab canvas.track{display:block;width:100%}
 .lab .labbar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:6px;font:500 16px "Barlow Condensed",sans-serif;color:var(--muted)}
 .lab .labbar .grow{margin-left:auto}
 button.btn{font:500 17px "Barlow Condensed",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:4px;padding:5px 14px;cursor:pointer}
 button.btn:hover{border-color:var(--ink-2)}
 button.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button.btn .swatch{width:12px;height:12px}
 .figures{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-top:18px}
 @media (max-width:860px){.figures{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .fig{background:var(--raised);padding:12px 14px}
@@ -169,8 +170,42 @@ th.calc,td.calc{background:color-mix(in srgb,var(--accent) 5%,transparent)}
 td .swatch{margin-right:8px}
 .note{font-size:15px;color:var(--muted);margin-top:10px;max-width:80ch}
 
+/* ---------- Aufbau & Ableitung ---------- */
+.setup{margin-top:34px}
+.setup canvas.track{height:250px}
+@media (max-width:700px){.setup canvas.track{height:190px}}
+.types{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.types .btn{display:inline-flex;align-items:center;gap:8px}
+.types .btn small{color:var(--muted);font-size:15px}
+.types .btn[aria-pressed="true"] small{color:inherit;opacity:.75}
+.types .play{margin-left:auto;background:var(--accent);color:var(--raised);border-color:var(--accent)}
+.controls.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:860px){.controls.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.controls.four{grid-template-columns:1fr}}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:22px}
+@media (max-width:700px){.readout{grid-template-columns:1fr}}
+.readout h4{font:500 17px "Barlow Condensed",sans-serif;color:var(--muted);margin:0 0 4px}
+.big{font:600 28px "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.big span{color:var(--muted);font-weight:500;font-size:19px}
+.ebar{display:flex;height:14px;border-radius:4px;overflow:hidden;background:var(--rule);margin:8px 0 6px}
+.ebar i{display:block;height:100%;transition:width .3s ease}
+.ebar .kept{background:var(--accent)}
+.ebar .lost{background:repeating-linear-gradient(135deg,var(--c-vi) 0 2px,transparent 2px 7px)}
+@media (prefers-reduced-motion: reduce){.ebar i{transition:none}}
+.elegend{font:500 16px "Barlow Condensed",sans-serif;color:var(--ink-2);display:flex;gap:18px;flex-wrap:wrap}
+.elegend b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.dbar{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:end;margin-top:14px}
+.seg{display:flex;gap:6px}
+.tlabel{flex:1;min-width:220px;font:500 17px "Barlow Condensed",sans-serif;color:var(--ink-2)}
+.tlabel output{float:right;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.dsub{font:500 18px "Barlow Condensed",sans-serif;color:var(--ink-2);margin:14px 0 0}
+.stack{margin-top:16px;display:grid;gap:6px}
+.sbox{position:relative}
+.slabel{font:600 18px "Barlow Condensed",sans-serif;margin:8px 0 2px}
+.stack .box{position:relative;touch-action:pan-y}
+
 /* ---------- Modell ---------- */
-.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 26px;margin-top:16px}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 26px;margin-top:18px}
 @media (max-width:700px){.controls{grid-template-columns:1fr}}
 .controls label{display:block;font:500 17px "Barlow Condensed",sans-serif;color:var(--ink-2)}
 .controls output{float:right;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -186,18 +221,35 @@ footer{margin-top:88px;padding:26px 0 48px;border-top:1px solid var(--rule);font
   <a class="home" href="#top">Stösse</a>
   <a href="#theorie">Theorie</a>
   <a href="#versuch">Versuch</a>
-  <a href="#detail">Messung im Detail</a>
-  <a href="#auswertung">Auswertung</a>
+  <a href="#ableitung">x, v und a</a>
+  <a href="#auswertung">Alle Messungen</a>
   <a href="#modell">Federmodell</a>
 </div></nav>
 
 <header class="hero wrap" id="top">
   <h1>Stösse zweier Wagen</h1>
-  <p class="intro">Zwei Wagen auf einer Schiene, zwei Ultraschallsensoren, drei Puffer: Feder, Schaumstoff und Klett. Der Impuls bleibt bei jedem Stoss erhalten. Wie viel Bewegungsenergie übrig bleibt, hängt vom Puffer ab.</p>
-  <figure class="bench">
-    <canvas id="hero" role="img" aria-label="Wiedergabe echter Messungen: zwei Wagen stossen zusammen, Stroboskop-Spuren zeigen die Geschwindigkeit."></canvas>
-    <figcaption><strong id="heroType">Messung</strong><span id="heroSub"></span><span class="hint">Abgespielt aus den Ultraschall-Rohdaten, ein Abbild alle 0,1 s</span></figcaption>
-  </figure>
+  <p class="intro">Zwei Wagen auf einer Schiene, zwei Ultraschallsensoren, drei Puffer: Feder, Schaumstoff und Klett. Der Impuls bleibt bei jedem Stoss erhalten. Wie viel Bewegungsenergie übrig bleibt, hängt vom Puffer ab. Stell unten Massen, Geschwindigkeiten und Puffer ein und starte den Stoss.</p>
+  <div class="lab setup" id="aufbau">
+    <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Der Stoss wird mit den eingestellten Werten simuliert."></canvas>
+    <div class="types" role="group" aria-label="Stossart">
+      <button class="btn" data-type="0"><span class="swatch" style="background:var(--c-el)"></span>Elastisch <small>Feder</small></button>
+      <button class="btn" data-type="1"><span class="swatch" style="background:var(--c-in)"></span>Teilelastisch <small>Schaumstoff</small></button>
+      <button class="btn" data-type="2"><span class="swatch" style="background:var(--c-vi)"></span>Inelastisch <small>Klett</small></button>
+      <button class="btn play" id="sPlay">Stoss starten</button>
+    </div>
+    <div class="controls four">
+      <label>Masse Wagen 1 in kg <output id="o_sm1"></output><input type="range" id="sm1" min="0.1" max="1" step="0.05" value="0.25"></label>
+      <label>Masse Wagen 2 in kg <output id="o_sm2"></output><input type="range" id="sm2" min="0.1" max="1" step="0.05" value="0.5"></label>
+      <label>v₁ von Wagen 1 in m/s <output id="o_sv1"></output><input type="range" id="sv1" min="-0.6" max="-0.05" step="0.01" value="-0.4"></label>
+      <label>v₂ von Wagen 2 in m/s <output id="o_sv2"></output><input type="range" id="sv2" min="-0.2" max="0.4" step="0.01" value="0"></label>
+    </div>
+    <div class="readout">
+      <div><h4>Gesamtimpuls vorher und nachher</h4><div class="big" id="r_p"></div></div>
+      <div><h4>Kinetische Energie vorher und nachher</h4><div class="big" id="r_E"></div>
+        <div class="ebar" aria-hidden="true"><i class="kept" id="r_kept"></i><i class="lost" id="r_lost"></i></div>
+        <div class="elegend"><span>Erhalten <b id="r_keep"></b></span><span>In Wärme und Verformung <b id="r_loss"></b></span><span>Stosszahl <b id="r_e"></b></span></div></div>
+    </div>
+  </div>
 </header>
 
 <main class="wrap">
@@ -241,29 +293,31 @@ footer{margin-top:88px;padding:26px 0 48px;border-top:1px solid var(--rule);font
 <section id="versuch">
   <h2>Der Versuch</h2>
   <div class="text">
-    <p>Zwei Wagen rollen auf einer Schiene. Je ein Ultraschallsensor misst den Abstand zu einem Wagen. Wagen 1 ist immer der stossende Wagen und fährt in negative Richtung, Wagen 2 ist der gestossene. Für jede Stossart haben wir vier Situationen gemessen, Messung 1 zusätzlich ein zweites Mal.</p>
+    <p>Zwei Wagen rollen auf einer Schiene. Je ein Ultraschallsensor misst den Abstand zu einem Wagen. Wagen 1 ist immer der stossende Wagen und fährt in negative Richtung, Wagen 2 ist der gestossene. Für jede Stossart haben wir vier Situationen gemessen: leichter Wagen stösst ruhenden schweren, schwerer stösst ruhenden leichten, gleich schwere mit einem ruhenden Wagen und gleich schwere, die aufeinander zufahren. Messung 1 haben wir wiederholt (1.2). Die Grafik oben zeigt den Aufbau: Die Sensoren messen von links die Abstände x₁ und x₂.</p>
   </div>
   <div class="setup-facts">
     <span>Abtastrate <b>200 Hz</b></span><span>Messdauer <b>5 s</b></span><span>Messpunkte <b>1001 je Sensor</b></span><span>Messungen <b>13</b></span><span>Software <b>LoggerPro</b></span>
   </div>
-  <div class="matrix"><table id="matrix"><thead></thead><tbody></tbody></table></div>
-  <p class="note">Messung wählen, um sie unten im Detail anzusehen. „leicht→schwer“ heisst: ein leichter Wagen stösst einen ruhenden schweren.</p>
 </section>
 
-<section id="detail">
-  <h2>Messung im Detail</h2>
-  <div class="detail-head"><h3 id="dTitle">Messung</h3><span id="dSub"></span></div>
+<section id="ableitung">
+  <h2>Von x(t) zu v(t) und a(t)</h2>
+  <div class="text"><p>Die Sensoren liefern nur den Ort x(t). Die Geschwindigkeit ist die Steigung von x(t), die Beschleunigung die Steigung von v(t). Fahr mit der Maus oder dem Regler über die Zeitachse: Die Tangente im oberen Diagramm zeigt v, die im mittleren a.</p></div>
   <div class="lab">
-    <canvas class="track" id="detailBench" role="img" aria-label="Wiedergabe der gewählten Messung"></canvas>
-    <div class="labbar"><button class="btn" id="dReplay">Nochmal abspielen</button><button class="btn" id="dSlow" aria-pressed="false">Zeitlupe</button><span class="grow">Wagen 1 farbig, Wagen 2 grau</span></div>
+    <div class="types" role="group" aria-label="Beispielmessung wählen" id="dTabs"></div>
+    <div class="dbar">
+      <div class="seg" role="group" aria-label="Wagen wählen"><button class="btn" data-cart="1" aria-pressed="true">Wagen 1</button><button class="btn" data-cart="2" aria-pressed="false">Wagen 2</button></div>
+      <label class="tlabel">Zeitpunkt t <output id="o_dt"></output><input type="range" id="dT" min="0" max="5" step="0.005" value="1"></label>
+    </div>
+    <p class="dsub" id="dSub"></p>
+    <div class="figures" id="dFigures"></div>
+    <div class="stack">
+      <div class="sbox"><div class="slabel">Ort x(t)</div><div class="box" style="height:220px"><canvas id="chX" role="img" aria-label="Ort gegen Zeit mit Tangente"></canvas></div></div>
+      <div class="sbox"><div class="slabel">Geschwindigkeit v(t) = dx/dt</div><div class="box" style="height:190px"><canvas id="chV" role="img" aria-label="Geschwindigkeit gegen Zeit mit Tangente"></canvas></div></div>
+      <div class="sbox"><div class="slabel">Beschleunigung a(t) = dv/dt</div><div class="box" style="height:190px"><canvas id="chA" role="img" aria-label="Beschleunigung gegen Zeit"></canvas></div></div>
+    </div>
+    <p class="note">Punkte sind Rohdaten, Linien geglättete Ableitungen (lokale Parabel über 0,15 s). Grau hinterlegt ist der Stoss, die Fläche unter a(t) dort ist ∫a dt = Δv, der Kraftstoss pro Masse. Wagen 2 ist unter 0,20 m nicht messbar (Mindestabstand des Sensors).</p>
   </div>
-  <div class="figures" id="dFigures"></div>
-  <div class="charts">
-    <figure class="chart"><h3>Ort x(t)</h3><p>Rohdaten der beiden Ultraschallsensoren</p><div class="legend" id="lgX"></div><div class="box"><canvas id="chX" role="img" aria-label="Ort gegen Zeit"></canvas></div></figure>
-    <figure class="chart"><h3>Geschwindigkeit v(t)</h3><p>Aus x(t) abgeleitet, geglättet über 0,15 s</p><div class="legend" id="lgV"></div><div class="box"><canvas id="chV" role="img" aria-label="Geschwindigkeit gegen Zeit"></canvas></div></figure>
-    <figure class="chart wide"><h3 id="chFTitle">Kraftstoss an Wagen 1</h3><p id="chFSub"></p><div class="box"><canvas id="chF" role="img" aria-label="Beschleunigung beziehungsweise Kraft während des Stosses"></canvas></div></figure>
-  </div>
-  <p class="note" id="dNote">Wagen 2 lässt sich unter 0,20 m nicht messen (Mindestabstand des Sensors). Diese Stellen fehlen im Diagramm, und v₂′ ist entsprechend unsicherer. Die Stossdauer hängt von der Glättung ab und ist eine Abschätzung.</p>
 </section>
 
 <section id="auswertung">
@@ -278,7 +332,7 @@ footer{margin-top:88px;padding:26px 0 48px;border-top:1px solid var(--rule);font
       <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th><th class="calc">ΔE<sub>kin</sub><small>%</small></th>
     </tr></thead><tbody></tbody>
   </table></div>
-  <p class="note">Hinterlegte Spalten sind berechnet. Geschwindigkeiten aus linearen Fits vor und nach dem Stoss. m₂/m₁ ist das Massenverhältnis, das die Impulserhaltung verlangt: m₂/m₁ = −Δv₁/Δv₂. Zeile anklicken, um die Messung im Detail zu sehen.</p>
+  <p class="note">Hinterlegte Spalten sind berechnet. Geschwindigkeiten aus linearen Fits vor und nach dem Stoss. m₂/m₁ ist das Massenverhältnis, das die Impulserhaltung verlangt: m₂/m₁ = −Δv₁/Δv₂. Zeile anklicken, um die Messung oben bei x, v und a anzusehen.</p>
 
   <div class="legend" id="lgTypes" style="margin-top:28px"></div>
   <div class="charts" style="margin-top:8px">

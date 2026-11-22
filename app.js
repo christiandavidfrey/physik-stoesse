@@ -82,7 +82,8 @@ function sg(y, w, deriv) {
   const h = (w - 1) / 2, out = new Array(y.length).fill(null);
   const ks = []; for (let k = -h; k <= h; k++) ks.push(k);
   let c;
-  if (deriv === 1) { const S = ks.reduce((s, k) => s + k * k, 0); c = ks.map(k => k / S / DT); }
+  if (deriv === 0) { const den = (2 * h - 1) * (2 * h + 1) * (2 * h + 3); c = ks.map(k => (3 * (3 * h * h + 3 * h - 1) - 15 * k * k) / den); }
+  else if (deriv === 1) { const S = ks.reduce((s, k) => s + k * k, 0); c = ks.map(k => k / S / DT); }
   else { const m = h * (h + 1) / 3, S = ks.reduce((s, k) => s + (k * k - m) ** 2, 0); c = ks.map(k => 2 * (k * k - m) / S / DT ** 2); }
   for (let i = h; i < y.length - h; i++) {
     let s = 0, bad = false;
@@ -100,7 +101,7 @@ async function loadRaw(run) {
   const [, ...rows] = parseCSV(await res.text());
   const t = [], x1 = [], x2 = [];
   rows.forEach(r => { t.push(+r[0]); x1.push(+r[1]); const b = +r[2]; x2.push(b > X2_MIN ? b : null); });
-  const v1 = sg(x1, SMOOTH, 1), v2 = sg(x2, SMOOTH, 1), a1 = sg(x1, SMOOTH, 2);
+  const v1 = sg(x1, SMOOTH, 1), v2 = sg(x2, SMOOTH, 1), a1 = sg(x1, SMOOTH, 2), a2 = sg(x2, SMOOTH, 2), s1 = sg(x1, SMOOTH, 0), s2 = sg(x2, SMOOTH, 0);
   const ic = Math.round(run.tc / DT);
   // Abstand der Messpunkte bei Berührung (hängt vom Puffer ab)
   let D = 0, n = 0;
@@ -122,88 +123,7 @@ async function loadRaw(run) {
   }
   const first = x2f.find(v => v !== null) ?? 0.28;
   for (let i = 0; i < x2f.length && x2f[i] === null; i++) x2f[i] = first;
-  return rawCache[run.id] = { t, x1, x2, x2f, v1, v2, a1, D, lo: t[lo], hi: t[hi], J, amax };
-}
-
-// ===================== Fahrbahn (Canvas) =====================
-const CART = 0.12;
-function makeBench(canvas, getScene) {
-  const ctx = canvas.getContext('2d');
-  let t0 = performance.now(), W = 0, H = 0, speed = 1, raf = 0;
-  function resize() { const r = canvas.getBoundingClientRect(), d = devicePixelRatio || 1; W = r.width; H = r.height; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
-  resize(); addEventListener('resize', resize);
-  function draw(t) {
-    const s = getScene(); if (!s) return;
-    const pad = 40, sc = (W - 2 * pad) / (s.xmax - s.xmin), X = x => pad + (x - s.xmin) * sc;
-    const railY = H - 46, gh = 28, wr = 4;
-    ctx.clearRect(0, 0, W, H);
-    const muted = css('--muted'), rail = css('--rail'), col1 = css(s.col1), col2 = css('--w2');
-    // Schiene
-    ctx.fillStyle = rail; ctx.fillRect(pad - 20, railY, W - 2 * pad + 40, 7);
-    ctx.fillRect(pad - 10, railY + 7, 4, H - railY - 10); ctx.fillRect(W - pad + 6, railY + 7, 4, H - railY - 10);
-    // Ultraschallsensoren an beiden Enden
-    ctx.strokeStyle = muted; ctx.fillStyle = muted; ctx.lineWidth = 1.5;
-    [[pad - 20, 1, 'Sensor 2'], [W - pad + 20, -1, 'Sensor 1']].forEach(([x, dir, lab]) => {
-      ctx.fillRect(dir > 0 ? x : x - 10, railY - 26, 10, 22);
-      for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(x + dir * 10, railY - 15, 5 * k, dir > 0 ? -0.6 : Math.PI - 0.6, dir > 0 ? 0.6 : Math.PI + 0.6); ctx.stroke(); }
-      ctx.font = '500 13px "Barlow Condensed",sans-serif'; ctx.textAlign = dir > 0 ? 'left' : 'right'; ctx.fillText(lab, x + dir * 14, H - 4);
-    });
-    function cart(c, col, alpha, label, heavy) {
-      const x = X(c - CART / 2), w = CART * sc, y = railY - gh - 2 * wr;
-      ctx.globalAlpha = alpha;
-      if (!label) { ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.roundRect(x + .7, y + .7, w - 1.4, gh - 1.4, 4); ctx.stroke(); ctx.globalAlpha = 1; return; }
-      ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, y, w, gh, 4); ctx.fill();
-      if (heavy) { ctx.beginPath(); ctx.roundRect(x + w * 0.22, y - 11, w * 0.56, 9, 2); ctx.fill(); }
-      ctx.fillStyle = css('--raised'); ctx.font = '600 16px "Barlow Condensed",sans-serif'; ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, y + gh / 2 + 5);
-      ctx.fillStyle = col; [x + w * 0.22, x + w * 0.78].forEach(cx => { ctx.beginPath(); ctx.arc(cx, railY - wr, wr, 0, 7); ctx.fill(); });
-      ctx.globalAlpha = 1;
-    }
-    // Stroboskop-Spur
-    let la = null, lb = null;
-    for (let k = Math.floor(t / 0.1); k >= 1; k--) {
-      const p = s.at(t - k * 0.1), al = Math.max(0.15, 0.6 - k * 0.025);
-      if (la === null || Math.abs(p.c1 - la) > 0.012) { cart(p.c1, col1, al); la = p.c1; }
-      if (lb === null || Math.abs(p.c2 - lb) > 0.012) { cart(p.c2, col2, al); lb = p.c2; }
-    }
-    const p = s.at(t);
-    cart(p.c2, col2, 1, 'W2', s.heavy2); cart(p.c1, col1, 1, 'W1', s.heavy1);
-    // Geschwindigkeitspfeile
-    [[p.c1, p.v1, col1], [p.c2, p.v2, col2]].forEach(([c, v, col]) => {
-      if (!ok(v) || Math.abs(v) < 0.02) return;
-      const x0 = X(c), len = v * 160, y = railY + 22;
-      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + len, y); ctx.stroke();
-      const dir = Math.sign(len); ctx.beginPath(); ctx.moveTo(x0 + len + dir * 2, y); ctx.lineTo(x0 + len - dir * 7, y - 5); ctx.lineTo(x0 + len - dir * 7, y + 5); ctx.fill();
-    });
-  }
-  function frame(now) {
-    const s = getScene();
-    if (s) {
-      const hold = 0.8, cyc = s.dur + hold;
-      const t = reduceMotion ? s.dur : Math.min(s.dur, (((now - t0) / 1000) * speed) % cyc);
-      draw(t);
-    }
-    if (!reduceMotion) raf = requestAnimationFrame(frame);
-  }
-  raf = requestAnimationFrame(frame);
-  return {
-    restart() { t0 = performance.now(); if (reduceMotion) requestAnimationFrame(frame); },
-    setSpeed(v) { speed = v; t0 = performance.now(); },
-  };
-}
-
-function dataScene(run, raw) {
-  const tA = Math.max(0, run.tc - 1.0), tB = Math.min(raw.t[raw.t.length - 1], run.tc + 1.8);
-  const n = raw.t.length - 1;
-  return {
-    dur: tB - tA, xmin: 0.04, xmax: 0.82, col1: run.T.color,
-    heavy1: run.aufbau === 'schwer→leicht', heavy2: run.aufbau === 'leicht→schwer',
-    at(t) {
-      const i = Math.max(0, Math.min(n, Math.round((tA + t) / DT)));
-      const c1 = raw.x1[i] - raw.D + CART / 2, c2 = raw.x2f[i] - CART / 2;
-      return { c1, c2, v1: raw.v1[i], v2: raw.v2[i] ?? (i > run.tc / DT ? run.u2 : run.v2) };
-    },
-  };
+  return rawCache[run.id] = { t, x1, x2, x2f, v1, v2, a1, a2, s1, s2, D, lo: t[lo], hi: t[hi], J, amax };
 }
 
 // ===================== Weg-Zeit-Skizzen (Theorie) =====================
@@ -225,6 +145,128 @@ document.querySelectorAll('[data-strobe]').forEach(svg => {
     <text x="${px(0.05)}" y="${py(0.1) - 8}" font-family="Barlow Condensed" font-size="13" fill="var(--ink-2)">W1</text>
     <text x="${px(0.05)}" y="${py(0.58) - 6}" font-family="Barlow Condensed" font-size="13" fill="var(--ink-2)">W2</text>`;
 });
+
+// ===================== Versuchsaufbau (Simulation) =====================
+// Ruhige, berechnete Animation: keine Messdaten, kein Rauschen.
+const SIM = { L: 1.2, cart: 0.16, buf: 0.025, e: [1, 0.55, 0] };   // e für Schaumstoff ≈ Mittel unserer Messungen 9 bis 12
+const sEl = { m1: $('sm1'), m2: $('sm2'), v1: $('sv1'), v2: $('sv2') };
+let simType = 0, simTraj = [], simT0 = performance.now();
+function simParams() { return { m1: +sEl.m1.value, m2: +sEl.m2.value, v1: +sEl.v1.value, v2: +sEl.v2.value, e: SIM.e[simType] }; }
+function buildTraj() {
+  const { m1, m2, v1, v2, e } = simParams(), C = SIM.cart, gap = C + SIM.buf;
+  const lo = C / 2 + 0.02, hi = SIM.L - C / 2 - 0.02, h = 1 / 120;
+  let c1 = 0.92, c2 = 0.42, u1 = v1, u2 = v2, stuck = false, endAt = Infinity; const pts = [];
+  for (let t = 0; t <= 5 && t <= endAt; t += h) {
+    pts.push({ c1, c2, u1, u2 });
+    c1 += u1 * h; c2 += u2 * h;
+    if (stuck) c1 = c2 + gap;
+    if (!stuck && c1 - c2 <= gap && u1 - u2 < 0) {
+      [u1, u2] = collide(m1, m2, u1, u2, e); c1 = c2 + gap;
+      if (e === 0) stuck = true;
+    }
+    // Anschläge an den Schienenenden: Wagen bleibt stehen, Animation läuft noch kurz aus
+    if (c2 < lo) { c2 = lo; u2 = 0; if (stuck) { u1 = 0; c1 = c2 + gap; } if (endAt === Infinity) endAt = t + 0.7; }
+    if (c1 > hi) { c1 = hi; u1 = 0; if (stuck) { u2 = 0; c2 = c1 - gap; } if (endAt === Infinity) endAt = t + 0.7; }
+    if (Math.abs(u1) < 1e-4 && Math.abs(u2) < 1e-4 && t > 0.3 && endAt === Infinity) endAt = t + 0.5;
+  }
+  simTraj = pts;
+}
+function updateSetup(restart = true) {
+  const { m1, m2, v1, v2, e } = simParams();
+  $('o_sm1').textContent = fmt(m1, 2); $('o_sm2').textContent = fmt(m2, 2);
+  $('o_sv1').textContent = fmt(v1, 2); $('o_sv2').textContent = fmt(v2, 2);
+  document.querySelectorAll('[data-type]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.type === simType));
+  const approach = v1 - v2 < 0;
+  const [u1, u2] = approach ? collide(m1, m2, v1, v2, e) : [v1, v2];
+  const p0 = m1 * v1 + m2 * v2, p1 = m1 * u1 + m2 * u2;
+  const E0 = .5 * m1 * v1 ** 2 + .5 * m2 * v2 ** 2, E1 = .5 * m1 * u1 ** 2 + .5 * m2 * u2 ** 2, keep = E0 > 0 ? E1 / E0 : 1;
+  $('r_p').innerHTML = `${fmt(p0)} <span>→</span> ${fmt(p1)} <span>kg·m/s</span>`;
+  $('r_E').innerHTML = `${fmt(E0 * 1000, 1)} <span>→</span> ${fmt(E1 * 1000, 1)} <span>mJ</span>`;
+  $('r_kept').style.width = keep * 100 + '%'; $('r_lost').style.width = (1 - keep) * 100 + '%';
+  $('r_keep').textContent = fmt(keep * 100, 0) + ' %'; $('r_loss').textContent = fmt((1 - keep) * 100, 0) + ' %'; $('r_e').textContent = fmt(e, 2);
+  buildTraj();
+  if (restart) simT0 = performance.now();
+}
+Object.values(sEl).forEach(el => el.addEventListener('input', () => updateSetup()));
+document.querySelectorAll('[data-type]').forEach(b => b.addEventListener('click', () => { simType = +b.dataset.type; updateSetup(); }));
+$('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
+
+(function setupCanvas() {
+  const canvas = $('setupCanvas'), ctx = canvas.getContext('2d');
+  let W = 0, H = 0;
+  function resize() { const r = canvas.getBoundingClientRect(), d = devicePixelRatio || 1; W = r.width; H = r.height; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
+  resize(); addEventListener('resize', resize);
+  const font = (w, s) => `${w} ${s}px "Barlow Condensed",sans-serif`;
+  function arrow(x0, x1, y, col) {
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+    const d = Math.sign(x1 - x0) || 1; ctx.beginPath(); ctx.moveTo(x1 + d * 2, y); ctx.lineTo(x1 - d * 7, y - 5); ctx.lineTo(x1 - d * 7, y + 5); ctx.fill();
+  }
+  function draw() {
+    if (!simTraj.length) return;
+    const k = Math.min(1, H / 250), padL = 64 * Math.max(.7, k), padR = 24, sc = (W - padL - padR) / SIM.L, X = x => padL + x * sc;
+    const railY = H - 52 * k, bodyH = 30 * k, wr = 5 * k, bodyTop = railY - 2 * wr - bodyH;
+    const { m1, m2 } = simParams();
+    const t = reduceMotion ? 0 : (performance.now() - simT0) / 1000;
+    const i = Math.min(simTraj.length - 1, Math.floor(t * 120)), p = simTraj[i];
+    const muted = css('--muted'), ink = css('--ink'), ink2 = css('--ink-2'), rail = css('--rail'), raised = css('--raised');
+    const col1 = css(TYPES[simType].color), col2 = css('--w2');
+    ctx.clearRect(0, 0, W, H);
+    // Schiene, Anschläge, Massstab
+    ctx.fillStyle = rail; ctx.fillRect(X(0), railY, SIM.L * sc, 7 * k);
+    ctx.fillRect(X(0) - 4, railY - 16 * k, 4, 16 * k); ctx.fillRect(X(SIM.L), railY - 16 * k, 4, 16 * k);
+    ctx.fillStyle = muted; ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.font = font(500, 13); ctx.textAlign = 'center';
+    for (let x = 0; x <= SIM.L + 1e-6; x += 0.1) {
+      const px = X(x), major = Math.round(x * 10) % 2 === 0;
+      ctx.beginPath(); ctx.moveTo(px, railY + 10 * k); ctx.lineTo(px, railY + (major ? 18 : 14) * k); ctx.stroke();
+      if (major) ctx.fillText(fmt(x, 1), px, railY + 32 * k);
+    }
+    ctx.textAlign = 'left'; ctx.fillText('x in m', X(SIM.L) - 30, railY + 46 * k > H - 2 ? H - 2 : railY + 46 * k);
+    // Ultraschallsensoren links
+    const flagTop = bodyTop - 62 * k, beam1 = flagTop + 8 * k, beam2 = bodyTop + bodyH / 2;
+    ctx.fillStyle = ink2; ctx.beginPath(); ctx.roundRect(X(0) - 30 * k - 8, beam1 - 9 * k, 22 * k, 18 * k, 3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(X(0) - 30 * k - 8, beam2 - 9 * k, 22 * k, 18 * k, 3); ctx.fill();
+    ctx.fillStyle = muted; ctx.font = font(500, 13); ctx.textAlign = 'left';
+    ctx.fillText('Sensoren', 4, flagTop - 14 * k);
+    // Wagen
+    const C = SIM.cart;
+    function cart(c, col, label, m, flag) {
+      const x = X(c - C / 2), w = C * sc;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, bodyTop, w, bodyH, 4); ctx.fill();
+      [x + w * .2, x + w * .8].forEach(cx => { ctx.beginPath(); ctx.arc(cx, railY - wr, wr, 0, 7); ctx.fill(); });
+      // Zusatzgewicht: Höhe wächst mit der Masse
+      const wh = (6 + 26 * (m - 0.1) / 0.9) * k;
+      ctx.fillStyle = ink2; ctx.globalAlpha = .85; ctx.beginPath(); ctx.roundRect(x + w * .3, bodyTop - wh, w * .45, wh, 2); ctx.fill(); ctx.globalAlpha = 1;
+      if (flag) { ctx.fillStyle = col; ctx.fillRect(x + w * .12, flagTop, 4, bodyTop - flagTop); ctx.fillRect(x + w * .12, flagTop, w * .16, 14 * k); }
+      ctx.fillStyle = raised; ctx.font = font(600, 16); ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, bodyTop + bodyH / 2 + 5);
+      ctx.fillStyle = ink; ctx.font = font(600, 14); ctx.fillText(fmt(m, 2) + ' kg', x + w * .52, bodyTop - wh - 5);
+    }
+    // Abstandslinien x1, x2
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
+    const x2face = X(p.c2 - C / 2), x1flag = X(p.c1 - C / 2) + C * sc * .12;
+    ctx.beginPath(); ctx.moveTo(X(0) - 8, beam2); ctx.lineTo(x2face, beam2); ctx.moveTo(X(0) - 8, beam1); ctx.lineTo(x1flag, beam1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = muted; ctx.font = font(500, 14); ctx.textAlign = 'center';
+    ctx.fillText('x₂', (X(0) + x2face) / 2, beam2 - 5); ctx.fillText('x₁', (X(0) + x1flag) / 2, beam1 - 5);
+    cart(p.c2, col2, 'W2', m2, false);
+    cart(p.c1, col1, 'W1', m1, true);
+    // Puffer vorne an Wagen 1
+    const bx1 = X(p.c1 - C / 2), bx0 = bx1 - SIM.buf * sc, by = bodyTop + bodyH * .2, bh = bodyH * .6;
+    ctx.strokeStyle = col1; ctx.fillStyle = col1; ctx.lineWidth = 1.6;
+    if (simType === 0) { ctx.beginPath(); ctx.moveTo(bx1, by + bh / 2); const n = 6; for (let j = 1; j <= n; j++) ctx.lineTo(bx1 - (bx1 - bx0) * j / n, by + (j % 2 ? 0 : bh)); ctx.stroke(); ctx.fillRect(bx0 - 2, by, 2, bh); }
+    else if (simType === 1) { ctx.globalAlpha = .5; ctx.beginPath(); ctx.roundRect(bx0, by - 2, bx1 - bx0, bh + 4, 4); ctx.fill(); ctx.globalAlpha = 1; }
+    else { ctx.fillRect(bx0, by - 2, bx1 - bx0, bh + 4); ctx.strokeStyle = raised; ctx.lineWidth = 1; for (let yy = by; yy < by + bh; yy += 4) { ctx.beginPath(); ctx.moveTo(bx0, yy); ctx.lineTo(bx1, yy + 3); ctx.stroke(); } }
+    // Geschwindigkeitspfeile oben
+    const ay = 16 * k + 8;
+    [[p.c1, p.u1, col1, 'v₁'], [p.c2, p.u2, col2, 'v₂']].forEach(([c, v, col, lab]) => {
+      const x0 = X(c); ctx.font = font(600, 14); ctx.fillStyle = col; ctx.textAlign = 'center';
+      if (Math.abs(v) < 0.005) { ctx.fillText(`${lab} = 0`, x0, ay + 4); return; }
+      arrow(x0, x0 + v * 140 * Math.max(.6, k), ay + 14 * k, col);
+      ctx.fillText(`${lab} = ${fmt(v, 2)} m/s`, x0, ay);
+    });
+  }
+  function frame() { draw(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+})();
 
 // ===================== Diagramme =====================
 const shapeSVG = {
@@ -267,18 +309,9 @@ function baseOpts() {
 const deNum = d => v => fmt(v, d);
 
 // ===================== Zustand =====================
-let RUNS = [], current = null, modelRun = null, heroScene = null, detailScene = null;
-const heroBench = makeBench($('hero'), () => heroScene);
-const detailBench = makeBench($('detailBench'), () => detailScene);
+let RUNS = [], modelRun = null;
 
 // ===================== Versuchsmatrix & Tabelle =====================
-function renderMatrix() {
-  $('matrix').querySelector('thead').innerHTML = `<tr><th></th>${TYPES.map(T => `<th style="text-align:left"><span class="swatch" style="background:var(${T.color});margin-right:8px"></span>${T.label}<small>${T.puffer}</small></th>`).join('')}</tr>`;
-  $('matrix').querySelector('tbody').innerHTML = AUFBAU.map(a => `<tr><th scope="row">${AUFBAU_TEXT[a]}</th>${TYPES.map(T =>
-    `<td>${RUNS.filter(r => r.T === T && r.aufbau === a).map(r => `<button class="run" data-run="${r.id}" aria-pressed="false">Nr. ${r.id}</button>`).join('')}</td>`).join('')}</tr>`).join('');
-  $('matrix').querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', () => selectRun(b.dataset.run, true)));
-}
-
 function renderTable() {
   const missing = '<span class="missing">fehlt</span>';
   $('table').querySelector('tbody').innerHTML = RUNS.map(r => `<tr data-run="${r.id}">
@@ -287,7 +320,7 @@ function renderTable() {
     <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
     <td>${ok(r.m1) ? fmt(r.m1) : missing}</td><td>${ok(r.m2) ? fmt(r.m2) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
-  $('table').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => selectRun(tr.dataset.run, true)));
+  $('table').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => selectDeriv(tr.dataset.run, true)));
   $('massNote').style.display = RUNS.every(r => r.hasMass) ? 'none' : '';
 }
 
@@ -332,74 +365,101 @@ function renderOverviewCharts() {
   }
 }
 
-// ===================== Messung im Detail =====================
-async function selectRun(id, scroll) {
+// ===================== Von x(t) zu v(t) und a(t) =====================
+// Zeichnet Zeitcursor, Tangente und Punkt in ein Diagramm
+const cursorPlugin = {
+  id: 'cursor',
+  afterDatasetsDraw(chart, _, o) {
+    if (!o || !ok(o.t)) return;
+    const { ctx, chartArea: a, scales: { x, y } } = chart;
+    ctx.save(); ctx.beginPath(); ctx.rect(a.left, a.top, a.right - a.left, a.bottom - a.top); ctx.clip();
+    const px = x.getPixelForValue(o.t);
+    ctx.strokeStyle = o.muted; ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke(); ctx.setLineDash([]);
+    if (ok(o.y)) {
+      if (ok(o.slope)) {
+        const s = o.span;
+        ctx.strokeStyle = o.ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x.getPixelForValue(o.t - s), y.getPixelForValue(o.y - o.slope * s)); ctx.lineTo(x.getPixelForValue(o.t + s), y.getPixelForValue(o.y + o.slope * s)); ctx.stroke();
+      }
+      ctx.fillStyle = o.color; ctx.strokeStyle = o.ring; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(px, y.getPixelForValue(o.y), 5.5, 0, 7); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  },
+};
+Chart.register(cursorPlugin);
+
+const DEMO = ['3', '11', '7'];   // je Stossart eine Beispielmessung: gleich schwere Wagen, einer ruht
+let dRun = null, dCart = 1, dTime = 1, dWin = [0, 5];
+function cartSeries(raw) {
+  return dCart === 1 ? { x: raw.x1, xs: raw.s1, v: raw.v1, a: raw.a1 } : { x: raw.x2, xs: raw.s2, v: raw.v2, a: raw.a2 };
+}
+function renderTabs() {
+  $('dTabs').innerHTML = TYPES.map((T, i) => {
+    const r = RUNS.find(r => r.id === DEMO[i]) || RUNS.find(r => r.T === T); if (!r) return '';
+    return `<button class="btn" data-drun="${r.id}"><span class="swatch" style="background:var(${T.color})"></span>${T.label} <small>Messung ${r.id}</small></button>`;
+  }).join('') + `<label style="margin-left:auto;display:inline-flex;gap:8px;align-items:center;font:500 17px 'Barlow Condensed',sans-serif;color:var(--ink-2)">Andere Messung <select id="dSelect" style="font:500 17px 'Barlow Condensed',sans-serif;background:transparent;color:inherit;border:0">${RUNS.map(r => `<option value="${r.id}">Nr. ${r.id}, ${r.T.label.toLowerCase()}</option>`).join('')}</select></label>`;
+  $('dTabs').querySelectorAll('[data-drun]').forEach(b => b.addEventListener('click', () => selectDeriv(b.dataset.drun)));
+  $('dSelect').addEventListener('change', e => selectDeriv(e.target.value));
+}
+async function selectDeriv(id, scroll) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
-  current = run;
-  document.querySelectorAll('.run').forEach(b => b.setAttribute('aria-pressed', b.dataset.run === id));
-  if (scroll) $('detail').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
-  $('dTitle').textContent = `Messung ${run.id}`;
-  $('dSub').textContent = `${run.T.label} mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}${run.note && run.id.includes('.') ? ', ' + run.note.toLowerCase() : ''}`;
-  let raw;
-  try { raw = await loadRaw(run); } catch (err) { $('dFigures').innerHTML = `<div class="fig"><div>${err.message}</div></div>`; return; }
-  if (current !== run) return;
-  detailScene = dataScene(run, raw); detailBench.restart();
-  renderDetail(run, raw);
+  dRun = run;
+  document.querySelectorAll('[data-drun]').forEach(b => b.setAttribute('aria-pressed', b.dataset.drun === id));
+  $('dSelect').value = id;
+  if (scroll) $('ableitung').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  $('dSub').textContent = `Messung ${run.id}: ${run.T.label} mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
+  const raw = await loadRaw(run); if (dRun !== run) return;
+  dWin = [Math.max(0, run.tc - 1.0), Math.min(raw.t[raw.t.length - 1], run.tc + 1.4)];
+  $('dT').min = dWin[0]; $('dT').max = dWin[1];
+  dTime = Math.max(dWin[0], run.tc - 0.2); $('dT').value = dTime;
+  renderDeriv();
 }
-
-function renderDetail(run, raw) {
-  const o = baseOpts(), c1 = css(run.T.color), c2 = css('--w2');
-  const dv = run.u1 - run.v1, dt = raw.hi - raw.lo, dev = (raw.J / dv - 1) * 100;
-  const m1 = run.m1, hasM = ok(m1);
-  const miss = what => `<strong class="missing">fehlt</strong><small>braucht ${what}</small>`;
-  const figs = [
-    ['Wagen 1: v₁ → v₁′', `<strong>${fmt(run.v1)} → ${fmt(run.u1)}</strong><small>m/s</small>`],
-    ['Wagen 2: v₂ → v₂′', `<strong>${fmt(run.v2)} → ${fmt(run.u2)}</strong><small>m/s, v₂′ unsicherer</small>`],
-    ['Stosszahl e', `<strong>${fmt(Math.max(run.e, 0), 2)}</strong><small>aus den Geschwindigkeiten</small>`],
-    ['m₂/m₁ aus Impulserhaltung', `<strong>${fmt(run.ratio, 2)}</strong><small>erwartet ${fmt(EXPECTED_RATIO[run.aufbau] ?? NaN, 1)}</small>`],
-    ['Stossdauer Δt', `<strong>≈ ${fmt(dt, 2)} s</strong><small>|a₁| über 10 % des Maximums</small>`],
-    ['∫a₁ dt (Kraftstoss pro Masse)', `<strong>${fmt(raw.J)} m/s</strong><small>Δv₁ aus Fits ${fmt(dv)} m/s, ${dev >= 0 ? '+' : ''}${fmt(dev, 0)} %</small>`],
-    ['Mittlere Kraft F̄ = m₁·Δv₁/Δt', hasM ? `<strong>${fmt(m1 * raw.J / dt, 2)} N</strong><small>Spitze ${fmt(m1 * raw.amax, 2)} N</small>` : miss('m₁')],
-    ['Kraftstoss ∫F dt und Δp₁', hasM ? `<strong>${fmt(m1 * raw.J)} N·s</strong><small>Δp₁ = ${fmt(m1 * dv)} kg·m/s</small>` : miss('m₁')],
-  ];
-  $('dFigures').innerHTML = figs.map(([k, v]) => `<div class="fig"><div>${k}</div>${v}</div>`).join('');
-
-  const pts = arr => arr.map((y, i) => ({ x: raw.t[i], y }));   // null-Werte unterbrechen die Linie
+function renderDeriv() {
+  const run = dRun, raw = run && rawCache[run.id]; if (!raw) return;
+  const o = baseOpts(), col = dCart === 1 ? css(run.T.color) : css('--w2'), S = cartSeries(raw);
+  const inWin = (arr) => arr.map((y, i) => ({ x: raw.t[i], y })).filter(p => p.x >= dWin[0] - 1e-9 && p.x <= dWin[1] + 1e-9);
+  const xs = { type: 'linear', min: dWin[0], max: dWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.25, callback: deNum(2) } };
+  const cur = { muted: css('--muted'), ink: css('--ink'), ring: css('--raised'), color: col, span: 0.3 };
   const band = { band: [raw.lo, raw.hi], fill: css('--rule') + '88', text: css('--muted') };
-  const xs = { type: 'linear', min: 0, max: 5, grid: o.grid, ticks: { ...o.ticks, callback: deNum(1) }, title: o.axisTitle('t in s') };
-
-  legend('lgX', [[shapeSVG.dots(c1), 'Wagen 1'], [shapeSVG.dots(c2), 'Wagen 2']]);
-  chart('chX', { type: 'scatter', data: { datasets: [
-      { label: 'Wagen 1', data: pts(raw.x1), backgroundColor: c1, borderWidth: 0, pointRadius: 1.4, pointHoverRadius: 3 },
-      { label: 'Wagen 2', data: pts(raw.x2), backgroundColor: c2, borderWidth: 0, pointRadius: 1.4, pointHoverRadius: 3 }] },
-    options: { maintainAspectRatio: false, animation: false, parsing: false,
-      plugins: { legend: { display: false }, mark: band, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: x = ${fmt(i.raw.y)} m` } } },
-      scales: { x: xs, y: { grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, border: { display: false }, title: o.axisTitle('x in m') } } } });
-
-  legend('lgV', [[shapeSVG.line(c1), 'Wagen 1'], [shapeSVG.line(c2), 'Wagen 2']]);
-  chart('chV', { type: 'line', data: { datasets: [
-      { label: 'Wagen 1', data: pts(raw.v1), borderColor: c1, borderWidth: 2, pointRadius: 0, spanGaps: false },
-      { label: 'Wagen 2', data: pts(raw.v2), borderColor: c2, borderWidth: 2, pointRadius: 0, spanGaps: false }] },
-    options: { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      plugins: { legend: { display: false }, mark: band, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: v = ${fmt(i.raw.y)} m/s` } } },
-      scales: { x: xs, y: { grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, border: { display: false }, title: o.axisTitle('v in m/s') } } } });
-
-  const k = hasM ? m1 : 1, from = run.tc - 0.4, to = run.tc + 0.7;
-  const fpts = raw.a1.map((a, i) => (a === null || raw.t[i] < from || raw.t[i] > to) ? null : { x: raw.t[i], y: a * k }).filter(Boolean);
-  const area = fpts.filter(p => p.x >= raw.lo && p.x <= raw.hi);
-  $('chFTitle').textContent = hasM ? 'Kraftstoss an Wagen 1: F(t)' : 'Kraftstoss an Wagen 1: a(t)';
-  $('chFSub').textContent = hasM ? 'F = m₁·a₁. Die Fläche unter der Kurve ist der Kraftstoss ∫F dt und sollte Δp₁ entsprechen.'
-    : 'Beschleunigung von Wagen 1. Die Fläche ist ∫a₁ dt = Δv₁, der Kraftstoss pro Masse. Mit m₁ wird daraus die Kraft F(t).';
-  chart('chF', { type: 'line', data: { datasets: [
-      { data: area, borderWidth: 0, pointRadius: 0, fill: 'origin', backgroundColor: c1 + '33' },
-      { label: hasM ? 'F' : 'a₁', data: fpts, borderColor: c1, borderWidth: 2, pointRadius: 0 }] },
-    options: { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { ...o.tooltip, filter: i => i.datasetIndex === 1, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => hasM ? `F = ${fmt(i.raw.y, 2)} N` : `a₁ = ${fmt(i.raw.y, 2)} m/s²` } } },
-      scales: { x: { type: 'linear', min: from, max: to, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, title: o.axisTitle('t in s') },
-        y: { grid: o.grid, ticks: { ...o.ticks, callback: deNum(1) }, border: { display: false }, title: o.axisTitle(hasM ? 'F in N' : 'a₁ in m/s²') } } } });
+  const hover = (evt, _, ch) => { const t = ch.scales.x.getValueForPixel(evt.x); if (ok(t)) setTime(t); };
+  const common = { maintainAspectRatio: false, animation: false, parsing: false, events: ['mousemove', 'click', 'touchstart', 'touchmove'], onHover: hover, onClick: hover };
+  const yAx = (title, d) => ({ afterFit: ax => { ax.width = 64; }, grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title) });
+  chart('chX', { type: 'scatter', data: { datasets: [{ data: inWin(S.x), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.8, pointHoverRadius: 1.8 }] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: { enabled: false }, mark: band, cursor: { ...cur } }, scales: { x: xs, y: yAx('x in m', 2) } } });
+  chart('chV', { type: 'line', data: { datasets: [{ data: inWin(S.v), borderColor: col, borderWidth: 2, pointRadius: 0 }] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: { enabled: false }, mark: band, cursor: { ...cur } }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
+  const aPts = inWin(S.a);
+  chart('chA', { type: 'line', data: { datasets: [
+      { data: aPts.filter(p => p.x >= raw.lo && p.x <= raw.hi && p.y !== null), borderWidth: 0, pointRadius: 0, fill: 'origin', backgroundColor: col + '33' },
+      { data: aPts, borderColor: col, borderWidth: 2, pointRadius: 0 }] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: { enabled: false }, mark: band, cursor: { ...cur } }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
+  setTime(dTime);
 }
-$('dReplay').addEventListener('click', () => detailBench.restart());
-$('dSlow').addEventListener('click', e => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', on); detailBench.setSpeed(on ? 0.3 : 1); });
+function setTime(t) {
+  const run = dRun, raw = run && rawCache[run.id]; if (!raw) return;
+  t = Math.min(dWin[1], Math.max(dWin[0], t));
+  const i = Math.round(t / DT); dTime = raw.t[i]; $('dT').value = dTime;
+  const S = cartSeries(raw), x = S.xs[i], v = S.v[i], a = S.a[i];
+  const set = (id, y, slope) => { const c = charts[id]; if (!c) return; Object.assign(c.options.plugins.cursor, { t: dTime, y: y ?? NaN, slope: slope ?? NaN }); c.update('none'); };
+  set('chX', x, v); set('chV', v, a); set('chA', a, null);
+  $('o_dt').textContent = fmt(dTime, 3) + ' s';
+  // Kraftstoss pro Masse für den gewählten Wagen
+  let J = 0, good = true; const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
+  for (let j = lo; j < hi; j++) { if (S.a[j] === null || S.a[j + 1] === null) { good = false; break; } J += (S.a[j] + S.a[j + 1]) / 2 * DT; }
+  const dv = dCart === 1 ? run.u1 - run.v1 : run.u2 - run.v2;
+  const na = '<strong>–</strong><small>hier nicht messbar</small>';
+  $('dFigures').innerHTML = [
+    ['Ort x', ok(x) && x !== null ? `<strong>${fmt(x)} m</strong><small>bei t = ${fmt(dTime, 2)} s</small>` : na],
+    ['v = Steigung der Tangente an x(t)', v !== null ? `<strong>${fmt(v)} m/s</strong><small>dx/dt</small>` : na],
+    ['a = Steigung der Tangente an v(t)', a !== null ? `<strong>${fmt(a, 2)} m/s²</strong><small>dv/dt</small>` : na],
+    ['Fläche unter a(t) im Stoss', good ? `<strong>${fmt(J)} m/s</strong><small>Δv aus Fits ${fmt(dv)} m/s, Stossdauer ≈ ${fmt(raw.hi - raw.lo, 2)} s</small>` : '<strong>–</strong><small>Wagen 2 im Stoss teils nicht messbar</small>'],
+  ].map(([k, val]) => `<div class="fig"><div>${k}</div>${val}</div>`).join('');
+}
+$('dT').addEventListener('input', e => setTime(+e.target.value));
+document.querySelectorAll('[data-cart]').forEach(b => b.addEventListener('click', () => {
+  dCart = +b.dataset.cart; document.querySelectorAll('[data-cart]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderDeriv();
+}));
 
 // ===================== Federmodell =====================
 const mk = $('mk'), mm1 = $('mm1'), mm2 = $('mm2');
@@ -457,42 +517,27 @@ function renderModel() {
 [mk, mm1, mm2].forEach(el => el.addEventListener('input', renderModel));
 
 // ===================== Start =====================
-async function heroCycle() {
-  // je Stossart die Messung mit gleich schweren Wagen, einer ruht
-  const picks = TYPES.map(T => RUNS.find(r => r.T === T && r.aufbau === 'gleich (einer ruht)') || RUNS.find(r => r.T === T)).filter(Boolean);
-  const loaded = await Promise.all(picks.map(r => loadRaw(r).then(raw => [r, raw]).catch(() => null)));
-  const list = loaded.filter(Boolean); if (!list.length) return;
-  let i = 0;
-  const show = () => {
-    const [r, raw] = list[i]; heroScene = dataScene(r, raw); heroBench.restart();
-    $('heroType').textContent = `Messung ${r.id}: ${r.T.label.toLowerCase()}`;
-    $('heroSub').textContent = `${r.T.puffer}, ${AUFBAU_TEXT[r.aufbau]}, e = ${fmt(Math.max(r.e, 0), 2)}`;
-  };
-  show();
-  if (!reduceMotion && list.length > 1) setInterval(() => { i = (i + 1) % list.length; show(); }, (heroScene.dur + 0.8) * 1000);
-}
-
+updateSetup();
 function renderAll() {
   renderOverviewCharts();
-  if (current && rawCache[current.id]) renderDetail(current, rawCache[current.id]);
+  renderDeriv();
   renderModel();
 }
-
 fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
   .then(text => {
     RUNS = parseRuns(text);
-    renderMatrix(); renderTable();
+    renderTable(); renderTabs();
     const elastic = RUNS.filter(r => r.T === TYPES[0]);
     $('modelRuns').innerHTML = 'Messung ' + elastic.map(r => `<button class="run" data-mrun="${r.id}" aria-pressed="false">Nr. ${r.id}</button>`).join('');
     $('modelRuns').querySelectorAll('[data-mrun]').forEach(b => b.addEventListener('click', () => selectModelRun(b.dataset.mrun)));
     return document.fonts.ready.then(() => {
       renderOverviewCharts();
-      heroCycle();
-      selectRun(RUNS[0].id, false);
+      selectDeriv(DEMO[0], false);
       if (elastic.length) selectModelRun(elastic[0].id);
     });
   })
-  .catch(() => {
+  .catch(err => {
+    console.error(err);
     $('massNote').innerHTML = '<b>Daten nicht geladen</b><span>Die Messdaten konnten nicht gelesen werden. Wird die Seite direkt vom Rechner geöffnet, bitte einen kleinen Webserver starten (siehe README).</span>';
   });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => RUNS.length && renderAll());
