@@ -138,12 +138,12 @@ document.querySelectorAll('[data-strobe]').forEach(svg => {
   svg.innerHTML = `
     <line x1="${l}" y1="${b}" x2="${W}" y2="${b}" stroke="var(--muted)"/><line x1="${l}" y1="${b}" x2="${l}" y2="2" stroke="var(--muted)"/>
     <line x1="${px(tc)}" y1="${b}" x2="${px(tc)}" y2="6" stroke="var(--rule)" stroke-dasharray="3 3"/>
-    <text x="${px(tc)}" y="${b + 15}" text-anchor="middle" font-family="Barlow Condensed" font-size="13" fill="var(--muted)">Stoss</text>
-    <text x="${W}" y="${b + 15}" text-anchor="end" font-family="Barlow Condensed" font-size="13" fill="var(--muted)">t</text>
-    <text x="${l - 8}" y="12" text-anchor="end" font-family="Barlow Condensed" font-size="13" fill="var(--muted)">x</text>
+    <text x="${px(tc)}" y="${b + 15}" text-anchor="middle" font-family="Archivo" font-size="13" fill="var(--muted)">Stoss</text>
+    <text x="${W}" y="${b + 15}" text-anchor="end" font-family="Archivo" font-size="13" fill="var(--muted)">t</text>
+    <text x="${l - 8}" y="12" text-anchor="end" font-family="Archivo" font-size="13" fill="var(--muted)">x</text>
     ${line(1, 'var(--w2)')}${line(0, 'var(--c-el)')}
-    <text x="${px(0.05)}" y="${py(0.1) - 8}" font-family="Barlow Condensed" font-size="13" fill="var(--ink-2)">W1</text>
-    <text x="${px(0.05)}" y="${py(0.58) - 6}" font-family="Barlow Condensed" font-size="13" fill="var(--ink-2)">W2</text>`;
+    <text x="${px(0.05)}" y="${py(0.1) - 8}" font-family="Archivo" font-size="13" fill="var(--ink-2)">W1</text>
+    <text x="${px(0.05)}" y="${py(0.58) - 6}" font-family="Archivo" font-size="13" fill="var(--ink-2)">W2</text>`;
 });
 
 // ===================== Versuchsaufbau (Simulation) =====================
@@ -196,7 +196,7 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
   let W = 0, H = 0;
   function resize() { const r = canvas.getBoundingClientRect(), d = devicePixelRatio || 1; W = r.width; H = r.height; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
   resize(); addEventListener('resize', resize);
-  const font = (w, s) => `${w} ${s}px "Barlow Condensed",sans-serif`;
+  const font = (w, s) => `${w} ${s}px "Archivo",sans-serif`;
   function arrow(x0, x1, y, col) {
     ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
@@ -204,6 +204,7 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
   }
   function draw() {
     if (!simTraj.length) return;
+    if ('fontStretch' in ctx) ctx.fontStretch = 'condensed';
     const k = Math.min(1, H / 250), padL = 64 * Math.max(.7, k), padR = 24, sc = (W - padL - padR) / SIM.L, X = x => padL + x * sc;
     const railY = H - 52 * k, bodyH = 30 * k, wr = 5 * k, bodyTop = railY - 2 * wr - bodyH;
     const { m1, m2 } = simParams();
@@ -287,7 +288,7 @@ const markPlugin = {
     ctx.save(); ctx.fillStyle = o.fill;
     const x0 = Math.max(a.left, x.getPixelForValue(o.band[0])), x1 = Math.min(a.right, x.getPixelForValue(o.band[1]));
     ctx.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
-    ctx.fillStyle = o.text; ctx.font = '500 13px "Barlow Condensed",sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = o.text; ctx.font = '500 13px "Archivo",sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('Stoss', (x0 + x1) / 2, a.top + 12);
     ctx.restore();
   },
@@ -298,7 +299,7 @@ let charts = {};
 function chart(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), cfg); return charts[id]; }
 function baseOpts() {
   const ink = css('--ink'), surface = css('--raised'), rule = css('--rule');
-  Chart.defaults.font.family = '"Barlow Condensed",sans-serif'; Chart.defaults.font.size = 14;
+  Chart.defaults.font.family = '"Archivo",sans-serif'; Chart.defaults.font.size = 12;
   Chart.defaults.color = css('--muted'); Chart.defaults.borderColor = rule; Chart.defaults.locale = 'de-CH';
   return {
     tooltip: { backgroundColor: ink, titleColor: surface, bodyColor: surface, titleFont: { weight: '600', size: 15 }, bodyFont: { size: 14 }, padding: 10, cornerRadius: 4, displayColors: false },
@@ -350,7 +351,7 @@ function renderOverviewCharts() {
           afterBuildTicks: ax => { ax.ticks = [0.25, 0.5, 1, 2, 4].map(v => ({ value: v })); }, ticks: { ...o.ticks, callback: v => ({ 0.25: '¼', 0.5: '½', 1: '1', 2: '2', 4: '4' })[v] ?? '' } } } } });
 
   const withMass = RUNS.filter(r => r.hasMass);
-  $('chP').parentElement.style.display = withMass.length ? '' : 'none';
+  $('pFigure').style.display = withMass.length ? '' : 'none'; $('massFact').style.display = RUNS.every(r => r.hasMass) ? 'none' : '';
   $('pSub').textContent = withMass.length ? 'Gestrichelt: perfekte Impulserhaltung p′ = p' : 'Erscheint, sobald die Massen in data/messungen.csv eingetragen sind.';
   if (withMass.length) {
     const lim = Math.max(...withMass.flatMap(r => [Math.abs(r.p0), Math.abs(r.p1)])) * 1.15;
@@ -398,7 +399,7 @@ function renderTabs() {
   $('dTabs').innerHTML = TYPES.map((T, i) => {
     const r = RUNS.find(r => r.id === DEMO[i]) || RUNS.find(r => r.T === T); if (!r) return '';
     return `<button class="btn" data-drun="${r.id}"><span class="swatch" style="background:var(${T.color})"></span>${T.label} <small>Messung ${r.id}</small></button>`;
-  }).join('') + `<label style="margin-left:auto;display:inline-flex;gap:8px;align-items:center;font:500 17px 'Barlow Condensed',sans-serif;color:var(--ink-2)">Andere Messung <select id="dSelect" style="font:500 17px 'Barlow Condensed',sans-serif;background:transparent;color:inherit;border:0">${RUNS.map(r => `<option value="${r.id}">Nr. ${r.id}, ${r.T.label.toLowerCase()}</option>`).join('')}</select></label>`;
+  }).join('') + `<label style="display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--ink-2)">Andere Messung <select id="dSelect" style="font:inherit">${RUNS.map(r => `<option value="${r.id}">Nr. ${r.id}, ${r.T.label.toLowerCase()}</option>`).join('')}</select></label>`;
   $('dTabs').querySelectorAll('[data-drun]').forEach(b => b.addEventListener('click', () => selectDeriv(b.dataset.drun)));
   $('dSelect').addEventListener('change', e => selectDeriv(e.target.value));
 }
