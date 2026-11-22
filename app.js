@@ -361,7 +361,7 @@ function renderTable() {
   });
   const PH = RUNS.some(r => r.ph);
   $('massNote').style.display = RUNS.every(r => r.hasMass) && !PH ? 'none' : '';
-  if (PH) $('massNote').innerHTML = '<b>Massen vorläufig.</b> Leicht 80 g, schwer 120 g sind Platzhalter (mit * markiert), bis die gewogenen Werte da sind. Impuls und Energie sind damit nur zur Orientierung. Die Geschwindigkeiten verlangen eher ein Verhältnis von etwa 1 : 2 (Spalte m₂/m₁), die Platzhalter haben 1 : 1,5.';
+  if (PH) $('massNote').innerHTML = '<b>Massen vorläufig.</b> Leicht 100 g, schwer 200 g sind Platzhalter (mit * markiert), bis die gewogenen Werte da sind. Das Verhältnis 1 : 2 passt zu dem, was die Impulserhaltung aus euren Geschwindigkeiten verlangt (Spalte m₂/m₁, Mittel ≈ 1,9); die absoluten Werte sind geschätzt.';
 }
 
 function renderOverviewCharts() {
@@ -386,7 +386,7 @@ function renderOverviewCharts() {
   const withMass = RUNS.filter(r => r.hasMass);
   $('pFigure').style.display = withMass.length ? '' : 'none'; $('massFact').style.display = RUNS.every(r => r.hasMass) && !RUNS.some(r => r.ph) ? 'none' : '';
   if (RUNS.some(r => r.ph)) $('massFact').innerHTML = 'Massen <b>vorläufig</b>';
-  $('pSub').textContent = withMass.length ? 'Gestrichelt: perfekte Impulserhaltung p′ = p.' + (withMass.some(r => r.ph) ? ' Mit vorläufigen Massen (80 g / 120 g), also nur zur Orientierung.' : '') : 'Erscheint, sobald die Massen in data/messungen.csv eingetragen sind.';
+  $('pSub').textContent = withMass.length ? 'Gestrichelt: perfekte Impulserhaltung p′ = p.' + (withMass.some(r => r.ph) ? ' Mit vorläufigen Massen (100\u00a0g / 200\u00a0g), also nur zur Orientierung.' : '') : 'Erscheint, sobald die Massen in data/messungen.csv eingetragen sind.';
   if (withMass.length) {
     const lim = Math.max(...withMass.flatMap(r => [Math.abs(r.p0), Math.abs(r.p1)])) * 1.15;
     chart('chP', { type: 'scatter',
@@ -450,7 +450,7 @@ async function selectModelRun(id) {
   modelRun = run;
   const [a, b] = defaultMasses(run); mm1.value = a; mm2.value = b;
   $('modelMassNote').style.display = run.hasMass && !run.ph ? 'none' : '';
-  if (run.ph) $('modelMassNote').textContent = 'Massen vorläufig (Platzhalter 80 g / 120 g), bis die gewogenen Werte in der CSV stehen.';
+  if (run.ph) $('modelMassNote').textContent = 'Massen vorläufig (Platzhalter 100 g / 200 g), bis die gewogenen Werte in der CSV stehen.';
   await loadRaw(run); renderModel();
 }
 function simulate(run, raw, k, m1, m2, c = 0) {

@@ -29,7 +29,7 @@ Die Massen stehen nur an **einer** Stelle: in `data/messungen.csv`, Spalten `m1`
 - `m1` = stossender Wagen (Wagen 1, Sensor 1)
 - `m2` = gestossener Wagen (Wagen 2, Sensor 2)
 
-Zurzeit stehen dort Platzhalter (leicht 0,080 kg, schwer 0,120 kg) mit `m_quelle = platzhalter`; die Seite markiert sie als vorläufig. Nach dem Wiegen die echten Werte eintragen und `m_quelle` leeren (oder `gewogen` schreiben).
+Zurzeit stehen dort Platzhalter (leicht 0,100 kg, schwer 0,200 kg; Verhältnis aus der Impulserhaltung) mit `m_quelle = platzhalter`; die Seite markiert sie als vorläufig. Nach dem Wiegen die echten Werte eintragen und `m_quelle` leeren (oder `gewogen` schreiben).
 
 Solange die Felder leer sind, zeigt die Seite „fehlt“. Sobald sie ausgefüllt sind, erscheinen automatisch Impuls p und p′, Energieänderung ΔE, mittlere Kraft, Kraftstoss ∫F dt im Vergleich mit Δp₁, das Impulsdiagramm, und das Federmodell übernimmt die echten Massen.
 
