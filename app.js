@@ -383,89 +383,43 @@ function renderOverviewCharts() {
   }
 }
 
-// ===================== Von x(t) zu v(t) und a(t) =====================
-// Zeichnet Zeitcursor, Tangente und Punkt in ein Diagramm
-const cursorPlugin = {
-  id: 'cursor',
-  afterDatasetsDraw(chart, _, o) {
-    if (!o || !ok(o.t)) return;
-    const { ctx, chartArea: a, scales: { x, y } } = chart;
-    ctx.save(); ctx.beginPath(); ctx.rect(a.left, a.top, a.right - a.left, a.bottom - a.top); ctx.clip();
-    const px = x.getPixelForValue(o.t);
-    ctx.strokeStyle = o.muted; ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke(); ctx.setLineDash([]);
-    if (ok(o.y)) {
-      if (ok(o.slope)) {
-        const s = o.span;
-        ctx.strokeStyle = o.ink; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(x.getPixelForValue(o.t - s), y.getPixelForValue(o.y - o.slope * s)); ctx.lineTo(x.getPixelForValue(o.t + s), y.getPixelForValue(o.y + o.slope * s)); ctx.stroke();
-      }
-      ctx.fillStyle = o.color; ctx.strokeStyle = o.ring; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(px, y.getPixelForValue(o.y), 5.5, 0, 7); ctx.fill(); ctx.stroke();
-    }
-    ctx.restore();
-  },
-};
-Chart.register(cursorPlugin);
-
-let dRun = null, dCart = 1, dTime = 1, dWin = [0, 5];
-function cartSeries(raw) {
-  return dCart === 1 ? { x: raw.x1, xs: raw.s1, v: raw.v1, a: raw.a1 } : { x: raw.x2, xs: raw.s2, v: raw.v2, a: raw.a2 };
-}
+// ===================== Von x(t) zu v(t) und a(t): beide Wagen =====================
+let dRun = null, dWin = [0, 5];
 async function selectDeriv(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
   dRun = run;
-  $('dSub').textContent = `Messung ${run.id}: ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
+  $('dSub').textContent = `Stoss ${run.id}: ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
   const raw = await loadRaw(run); if (dRun !== run) return;
   dWin = [Math.max(0, run.tc - 1.0), Math.min(raw.t[raw.t.length - 1], run.tc + 1.4)];
-  $('dT').min = dWin[0]; $('dT').max = dWin[1];
-  dTime = Math.max(dWin[0], run.tc - 0.2); $('dT').value = dTime;
   renderDeriv();
 }
 function renderDeriv() {
   const run = dRun, raw = run && rawCache[run.id]; if (!raw) return;
-  const o = baseOpts(), col = dCart === 1 ? css('--ink') : css('--w2'), S = cartSeries(raw);
-  const inWin = (arr) => arr.map((y, i) => ({ x: raw.t[i], y })).filter(p => p.x >= dWin[0] - 1e-9 && p.x <= dWin[1] + 1e-9);
+  const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2');
+  const inWin = arr => arr.map((y, i) => ({ x: raw.t[i], y })).filter(p => p.x >= dWin[0] - 1e-9 && p.x <= dWin[1] + 1e-9);
   const xs = { type: 'linear', min: dWin[0], max: dWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.25, callback: deNum(2) } };
-  const cur = { muted: css('--muted'), ink: css('--ink'), ring: css('--raised'), color: col, span: 0.3 };
   const band = { band: [raw.lo, raw.hi], fill: css('--rule') + '88', text: css('--muted') };
-  const hover = (evt, _, ch) => { const t = ch.scales.x.getValueForPixel(evt.x); if (ok(t)) setTime(t); };
-  const common = { maintainAspectRatio: false, animation: false, parsing: false, events: ['mousemove', 'click', 'touchstart', 'touchmove'], onHover: hover, onClick: hover };
+  const tip = (unit, d) => ({ ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, d)} ${unit}` } });
+  const common = { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
   const yAx = (title, d) => ({ afterFit: ax => { ax.width = 64; }, grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title) });
-  chart('chX', { type: 'scatter', data: { datasets: [{ data: inWin(S.x), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.8, pointHoverRadius: 1.8 }] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: { enabled: false }, mark: band, cursor: { ...cur } }, scales: { x: xs, y: yAx('x in m', 2) } } });
-  chart('chV', { type: 'line', data: { datasets: [{ data: inWin(S.v), borderColor: col, borderWidth: 2, pointRadius: 0 }] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: { enabled: false }, mark: band, cursor: { ...cur } }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
-  const aPts = inWin(S.a);
-  chart('chA', { type: 'line', data: { datasets: [
-      { data: aPts.filter(p => p.x >= raw.lo && p.x <= raw.hi && p.y !== null), borderWidth: 0, pointRadius: 0, fill: 'origin', backgroundColor: col + '33' },
-      { data: aPts, borderColor: col, borderWidth: 2, pointRadius: 0 }] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: { enabled: false }, mark: band, cursor: { ...cur } }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
-  setTime(dTime);
+  legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']]);
+  const pts = (label, arr, col) => ({ label, data: inWin(arr), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.6, pointHoverRadius: 3 });
+  const ln = (label, arr, col) => ({ label, data: inWin(arr), borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 });
+  chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band }, scales: { x: xs, y: yAx('x in m', 2) } } });
+  chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
+  chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), mark: band }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
+  // Kraftstoss pro Masse je Wagen: Fläche unter a(t) im Stoss gegen Δv aus den Fits
+  const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
+  const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
+  const J1 = area(raw.a1), J2 = area(raw.a2);
+  const cell = (k, J, dv) => `<div class="fig"><div>${k}</div>${ok(J) ? `<strong>${fmt(J)} m/s</strong><small>Δv aus Fits ${fmt(dv)} m/s</small>` : `<strong>–</strong><small>im Stoss teils nicht messbar (unter 0,20 m)</small>`}</div>`;
+  $('dFigures').innerHTML = cell('Wagen 1: Fläche unter a(t) im Stoss', J1, run.u1 - run.v1) + cell('Wagen 2: Fläche unter a(t) im Stoss', J2, run.u2 - run.v2)
+    + `<div class="fig"><div>Stossdauer</div><strong>${fmt(raw.hi - raw.lo, 2)} s</strong><small>grau hinterlegt</small></div>`
+    + `<div class="fig"><div>Grösste Beschleunigung Wagen 1</div><strong>${fmt(Math.abs(raw.amax), 1)} m/s²</strong><small>im Stoss</small></div>`;
 }
-function setTime(t) {
-  const run = dRun, raw = run && rawCache[run.id]; if (!raw) return;
-  t = Math.min(dWin[1], Math.max(dWin[0], t));
-  const i = Math.round(t / DT); dTime = raw.t[i]; $('dT').value = dTime;
-  const S = cartSeries(raw), x = S.xs[i], v = S.v[i], a = S.a[i];
-  const set = (id, y, slope) => { const c = charts[id]; if (!c) return; Object.assign(c.options.plugins.cursor, { t: dTime, y: y ?? NaN, slope: slope ?? NaN }); c.update('none'); };
-  set('chX', x, v); set('chV', v, a); set('chA', a, null);
-  $('o_dt').textContent = fmt(dTime, 3) + ' s';
-  // Kraftstoss pro Masse für den gewählten Wagen
-  let J = 0, good = true; const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
-  for (let j = lo; j < hi; j++) { if (S.a[j] === null || S.a[j + 1] === null) { good = false; break; } J += (S.a[j] + S.a[j + 1]) / 2 * DT; }
-  const dv = dCart === 1 ? run.u1 - run.v1 : run.u2 - run.v2;
-  const na = '<strong>–</strong><small>hier nicht messbar</small>';
-  $('dFigures').innerHTML = [
-    ['Ort x', ok(x) && x !== null ? `<strong>${fmt(x)} m</strong><small>bei t = ${fmt(dTime, 2)} s</small>` : na],
-    ['v = Steigung der Tangente an x(t)', v !== null ? `<strong>${fmt(v)} m/s</strong><small>dx/dt</small>` : na],
-    ['a = Steigung der Tangente an v(t)', a !== null ? `<strong>${fmt(a, 2)} m/s²</strong><small>dv/dt</small>` : na],
-    ['Fläche unter a(t) im Stoss', good ? `<strong>${fmt(J)} m/s</strong><small>Δv aus Fits ${fmt(dv)} m/s, Stossdauer ≈ ${fmt(raw.hi - raw.lo, 2)} s</small>` : '<strong>–</strong><small>Wagen 2 im Stoss teils nicht messbar</small>'],
-  ].map(([k, val]) => `<div class="fig"><div>${k}</div>${val}</div>`).join('');
-}
-$('dT').addEventListener('input', e => setTime(+e.target.value));
-document.querySelectorAll('[data-cart]').forEach(b => b.addEventListener('click', () => {
-  dCart = +b.dataset.cart; document.querySelectorAll('[data-cart]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderDeriv();
-}));
 
 // ===================== Federmodell =====================
 const mk = $('mk'), mc = $('mc'), mm1 = $('mm1'), mm2 = $('mm2');
@@ -548,6 +502,7 @@ $('backBtn').addEventListener('click', showTable);
 async function selectRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
   SEL = run; lastRun = id;
+  document.querySelectorAll('#viewDetail details[open]').forEach(d => { d.open = false; });
   const k = ORDER.indexOf(run), prev = ORDER[k - 1], next = ORDER[k + 1];
   $('dhTitle').textContent = `Stoss ${run.id}`;
   $('dhInfo').innerHTML = `${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${fmt(run.m1)} kg, m₂ = ${fmt(run.m2)} kg` : '<span class="missing">Massen fehlen noch</span>'}`;
