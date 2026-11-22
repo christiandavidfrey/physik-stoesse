@@ -180,8 +180,8 @@ function updateSetup(restart = true) {
   const [u1, u2] = approach ? collide(m1, m2, v1, v2, e) : [v1, v2];
   const p0 = m1 * v1 + m2 * v2, p1 = m1 * u1 + m2 * u2;
   const E0 = .5 * m1 * v1 ** 2 + .5 * m2 * v2 ** 2, E1 = .5 * m1 * u1 ** 2 + .5 * m2 * u2 ** 2, keep = E0 > 0 ? E1 / E0 : 1;
-  $('r_p').innerHTML = `${fmt(p0)} <span>→</span> ${fmt(p1)} <span>kg·m/s</span>`;
-  $('r_E').innerHTML = `${fmt(E0 * 1000, 1)} <span>→</span> ${fmt(E1 * 1000, 1)} <span>mJ</span>`;
+  $('r_p').innerHTML = `${fmt(p0)} <span>→</span> ${fmt(p1)}<span class="u">kg·m/s</span>`;
+  $('r_E').innerHTML = `${fmt(E0 * 1000, 1)} <span>→</span> ${fmt(E1 * 1000, 1)}<span class="u">mJ</span>`;
   $('r_kept').style.width = keep * 100 + '%'; $('r_lost').style.width = (1 - keep) * 100 + '%';
   $('r_keep').textContent = fmt(keep * 100, 0) + ' %'; $('r_loss').textContent = fmt((1 - keep) * 100, 0) + ' %'; $('r_e').textContent = fmt(e, 2);
   buildTraj();
