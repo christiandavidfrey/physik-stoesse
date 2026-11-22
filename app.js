@@ -152,7 +152,7 @@ document.querySelectorAll('[data-strobe]').forEach(svg => {
 const SIM = { L: 1.2, cart: 0.16, buf: 0.018 };   // buf: Aufsatz je Wagen, beide Wagen tragen denselben
 const ani = { run: null, raw: null, model: null, tA: 0, tB: 0, start: 0, speed: 1, playing: false, frozen: 0 };
 function setupLoad(run, raw) {
-  Object.assign(ani, { run, raw, tA: Math.max(0, run.tc - 1.0), tB: Math.min(raw.t[raw.t.length - 1], run.tc + 1.4) });
+  Object.assign(ani, { run, raw, tA: 0, tB: raw.t[raw.t.length - 1] });   // volle Messdauer
   fillSetupFigures();
   // erst abspielen, wenn die Grafik im Bild ist
   ani.pending = !reduceMotion; playSetup(false); ani.frozen = reduceMotion ? ani.tB : ani.tA;
@@ -390,14 +390,14 @@ async function selectDeriv(id) {
   dRun = run;
   $('dSub').textContent = `Stoss ${run.id}: ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
   const raw = await loadRaw(run); if (dRun !== run) return;
-  dWin = [Math.max(0, run.tc - 1.0), Math.min(raw.t[raw.t.length - 1], run.tc + 1.4)];
+  dWin = [0, raw.t[raw.t.length - 1]];   // volle Messdauer, 0 bis 5 s
   renderDeriv();
 }
 function renderDeriv() {
   const run = dRun, raw = run && rawCache[run.id]; if (!raw) return;
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2');
   const inWin = arr => arr.map((y, i) => ({ x: raw.t[i], y })).filter(p => p.x >= dWin[0] - 1e-9 && p.x <= dWin[1] + 1e-9);
-  const xs = { type: 'linear', min: dWin[0], max: dWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.25, callback: deNum(2) } };
+  const xs = { type: 'linear', min: dWin[0], max: dWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.5, callback: deNum(1) } };
   const band = { band: [raw.lo, raw.hi], fill: css('--rule') + '88', text: css('--muted') };
   const tip = (unit, d) => ({ ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, d)} ${unit}` } });
   const common = { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
@@ -435,7 +435,7 @@ async function selectModelRun(id) {
   await loadRaw(run); renderModel();
 }
 function simulate(run, raw, k, m1, m2, c = 0) {
-  const t0 = Math.max(0, run.tc - 0.5), t1 = Math.min(5, run.tc + 1.4), i0 = Math.round(t0 / DT);
+  const t0 = Math.max(0, run.tc - 0.5), t1 = raw.t[raw.t.length - 1], i0 = Math.round(t0 / DT);
   const avg = (arr, i) => { let s = 0, n = 0; for (let j = i - 4; j <= i + 4; j++) if (arr[j] !== null && arr[j] !== undefined) { s += arr[j]; n++; } return s / n; };
   let x1 = avg(raw.x1, i0), x2 = avg(raw.x2, i0), v1 = run.v1, v2 = run.v2;
   if (!ok(x2)) x2 = raw.x2f[i0];
@@ -457,8 +457,8 @@ function renderModel() {
   const sim = simulate(run, raw, k, m1, m2, c), { out, t0, t1 } = sim;
   if (ani.run === run) { ani.model = sim; fillSetupFigures(); }
   $('modelE').innerHTML = `Stosszahl gemessen <b>${fmt(Math.max(run.e, 0), 2)}</b>, im Modell <b>${fmt(sim.e, 2)}</b>. Endgeschwindigkeiten im Modell: v₁′ = ${fmt(sim.u1, 2)} m/s, v₂′ = ${fmt(sim.u2, 2)} m/s (gemessen ${fmt(run.u1, 2)} und ${fmt(run.u2, 2)} m/s).`;
-  const meas = arr => arr.map((y, i) => (y === null || raw.t[i] < t0 || raw.t[i] > t1 || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
-  const xs = { type: 'linear', min: t0, max: t1, grid: o.grid, ticks: { ...o.ticks, callback: deNum(1) }, title: o.axisTitle('t in s') };
+  const meas = arr => arr.map((y, i) => (y === null || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
+  const xs = { type: 'linear', min: 0, max: raw.t[raw.t.length - 1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.5, callback: deNum(1) }, title: o.axisTitle('t in s') };
   legend('lgMX', [[shapeSVG.dots(c1), 'Wagen 1 gemessen'], [shapeSVG.line(c1), 'Wagen 1 Modell'], [shapeSVG.dots(c2), 'Wagen 2 gemessen'], [shapeSVG.line(c2), 'Wagen 2 Modell']]);
   chart('chMX', { type: 'scatter', data: { datasets: [
       { label: 'Wagen 1 gemessen', data: meas(raw.x1), backgroundColor: c1 + '99', borderWidth: 0, pointRadius: 1.5 },
