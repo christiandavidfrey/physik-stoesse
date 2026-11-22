@@ -14,6 +14,10 @@ Seite: https://christiandavidfrey.github.io/physik-stoesse/
 | `data/rohdaten/Messung_<nr>.csv` | Rohdaten je Messung: `t_s, x1_m, x2_m` |
 | `lib/` | Chart.js und KaTeX (lokal, keine externen Server nötig) |
 
+## Aufsätze
+
+Beide Wagen tragen immer denselben Aufsatz: elastisch beide Feder, teilelastisch beide Schaumstoffkeil, inelastisch beide Klett.
+
 ## Massen nachtragen
 
 Die Massen stehen nur an **einer** Stelle: in `data/messungen.csv`, Spalten `m1` und `m2` (in kg).

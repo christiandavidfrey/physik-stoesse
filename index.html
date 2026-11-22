@@ -167,13 +167,13 @@ footer{color:var(--muted);font-size:14px;padding-top:36px;padding-bottom:96px;ma
 <section id="aufbau">
   <div class="col">
     <h2>Versuchsaufbau</h2>
-    <p class="lede">Zwei Wagen auf einer Schiene, links die Ultraschallsensoren. Wähle Puffer, Massen und Geschwindigkeiten und starte den Stoss. Die Simulation rechnet mit idealen Stössen.</p>
+    <p class="lede">Zwei Wagen auf einer Schiene, links die Ultraschallsensoren. Beide Wagen tragen immer denselben Aufsatz: Feder, Schaumstoffkeil oder Klett. Wähle Aufsatz, Massen und Geschwindigkeiten und starte den Stoss. Die Simulation rechnet mit idealen Stössen.</p>
   </div>
   <figure class="wide">
     <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Der Stoss wird mit den eingestellten Werten simuliert."></canvas>
     <div class="row" role="group" aria-label="Stossart">
-      <button class="btn" data-type="0"><span class="swatch" style="background:var(--c-el)"></span>Elastisch <small>Feder</small></button>
-      <button class="btn" data-type="1"><span class="swatch" style="background:var(--c-in)"></span>Teilelastisch <small>Schaumstoff</small></button>
+      <button class="btn" data-type="0"><span class="swatch" style="background:var(--c-el)"></span>Elastisch <small>Federn</small></button>
+      <button class="btn" data-type="1"><span class="swatch" style="background:var(--c-in)"></span>Teilelastisch <small>Schaumstoffkeile</small></button>
       <button class="btn" data-type="2"><span class="swatch" style="background:var(--c-vi)"></span>Inelastisch <small>Klett</small></button>
       <button class="btn play" id="sPlay" style="margin-left:auto">Stoss starten</button>
     </div>
@@ -203,9 +203,9 @@ footer{color:var(--muted);font-size:14px;padding-top:36px;padding-bottom:96px;ma
       <div class="f"><span>Ableitungen</span><div class="formula" data-tex="v = \frac{\mathrm dx}{\mathrm dt},\quad a = \frac{\mathrm dv}{\mathrm dt}"></div></div>
     </div>
     <div class="types-legend">
-      <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>Feder, e ≈ 1, E<sub>kin</sub> bleibt erhalten</div>
-      <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>Schaumstoff, 0 &lt; e &lt; 1</div>
-      <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>Klett, e = 0, fahren gemeinsam weiter</div>
+      <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>beide Wagen mit Feder, e ≈ 1, E<sub>kin</sub> bleibt erhalten</div>
+      <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>beide mit Schaumstoffkeil, 0 &lt; e &lt; 1</div>
+      <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>beide mit Klett, e = 0, fahren gemeinsam weiter</div>
     </div>
   </div>
 </section>

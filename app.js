@@ -19,7 +19,7 @@ document.querySelectorAll('[data-tex]').forEach(el => {
 
 const TYPES = [
   { key: 'elastisch', label: 'Elastisch', puffer: 'Feder', color: '--c-el', shape: 'circle' },
-  { key: 'teilelastisch', label: 'Teilelastisch', puffer: 'Schaumstoff', color: '--c-in', shape: 'triangle' },
+  { key: 'teilelastisch', label: 'Teilelastisch', puffer: 'Schaumstoffkeil', color: '--c-in', shape: 'triangle' },
   { key: 'inelastisch', label: 'Inelastisch', puffer: 'Klett', color: '--c-vi', shape: 'rectRot' },
 ];
 const typeOf = s => {
@@ -148,12 +148,13 @@ document.querySelectorAll('[data-strobe]').forEach(svg => {
 
 // ===================== Versuchsaufbau (Simulation) =====================
 // Ruhige, berechnete Animation: keine Messdaten, kein Rauschen.
-const SIM = { L: 1.2, cart: 0.16, buf: 0.025, e: [1, 0.55, 0] };   // e für Schaumstoff ≈ Mittel unserer Messungen 9 bis 12
+const SIM = { L: 1.2, cart: 0.16, buf: 0.018,   // buf: Aufsatz je Wagen, beide Wagen tragen denselben
+  e: [1, 0.55, 0] };   // e für Schaumstoff ≈ Mittel unserer Messungen 9 bis 12
 const sEl = { m1: $('sm1'), m2: $('sm2'), v1: $('sv1'), v2: $('sv2') };
 let simType = 0, simTraj = [], simT0 = performance.now();
 function simParams() { return { m1: +sEl.m1.value, m2: +sEl.m2.value, v1: +sEl.v1.value, v2: +sEl.v2.value, e: SIM.e[simType] }; }
 function buildTraj() {
-  const { m1, m2, v1, v2, e } = simParams(), C = SIM.cart, gap = C + SIM.buf;
+  const { m1, m2, v1, v2, e } = simParams(), C = SIM.cart, gap = C + 2 * SIM.buf;
   const lo = C / 2 + 0.02, hi = SIM.L - C / 2 - 0.02, h = 1 / 120;
   let c1 = 0.92, c2 = 0.42, u1 = v1, u2 = v2, stuck = false, endAt = Infinity; const pts = [];
   for (let t = 0; t <= 5 && t <= endAt; t += h) {
@@ -249,12 +250,17 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
     ctx.fillText('x₂', (X(0) + x2face) / 2, beam2 - 5); ctx.fillText('x₁', (X(0) + x1flag) / 2, beam1 - 5);
     cart(p.c2, col2, 'W2', m2, false);
     cart(p.c1, col1, 'W1', m1, true);
-    // Puffer vorne an Wagen 1
-    const bx1 = X(p.c1 - C / 2), bx0 = bx1 - SIM.buf * sc, by = bodyTop + bodyH * .2, bh = bodyH * .6;
-    ctx.strokeStyle = col1; ctx.fillStyle = col1; ctx.lineWidth = 1.6;
-    if (simType === 0) { ctx.beginPath(); ctx.moveTo(bx1, by + bh / 2); const n = 6; for (let j = 1; j <= n; j++) ctx.lineTo(bx1 - (bx1 - bx0) * j / n, by + (j % 2 ? 0 : bh)); ctx.stroke(); ctx.fillRect(bx0 - 2, by, 2, bh); }
-    else if (simType === 1) { ctx.globalAlpha = .5; ctx.beginPath(); ctx.roundRect(bx0, by - 2, bx1 - bx0, bh + 4, 4); ctx.fill(); ctx.globalAlpha = 1; }
-    else { ctx.fillRect(bx0, by - 2, bx1 - bx0, bh + 4); ctx.strokeStyle = raised; ctx.lineWidth = 1; for (let yy = by; yy < by + bh; yy += 4) { ctx.beginPath(); ctx.moveTo(bx0, yy); ctx.lineTo(bx1, yy + 3); ctx.stroke(); } }
+    // Aufsätze: beide Wagen tragen immer denselben (Feder, Schaumstoffkeil oder Klett), einander zugewandt
+    const by = bodyTop + bodyH * .2, bh = bodyH * .6, bl = SIM.buf * sc;
+    function buffer(face, dir, col) {   // dir = −1: Aufsatz zeigt nach links, +1: nach rechts
+      const tip = face + dir * bl, a = Math.min(face, tip), b = Math.max(face, tip);
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.6;
+      if (simType === 0) { ctx.beginPath(); ctx.moveTo(face, by + bh / 2); const n = 5; for (let j = 1; j <= n; j++) ctx.lineTo(face + dir * bl * j / n, by + (j % 2 ? 0 : bh)); ctx.stroke(); ctx.fillRect(dir < 0 ? tip - 2 : tip, by, 2, bh); }
+      else if (simType === 1) { ctx.globalAlpha = .55; ctx.beginPath(); ctx.moveTo(face, by - 2); ctx.lineTo(tip, by + bh * .25); ctx.lineTo(tip, by + bh * .75); ctx.lineTo(face, by + bh + 2); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }
+      else { ctx.fillRect(a, by - 2, b - a, bh + 4); ctx.strokeStyle = raised; ctx.lineWidth = 1; for (let yy = by; yy < by + bh; yy += 4) { ctx.beginPath(); ctx.moveTo(a, yy); ctx.lineTo(b, yy + 3); ctx.stroke(); } }
+    }
+    buffer(X(p.c1 - C / 2), -1, col1);
+    buffer(X(p.c2 + C / 2), 1, col2);
     // Geschwindigkeitspfeile oben
     const ay = 16 * k + 8;
     [[p.c1, p.u1, col1, 'v₁'], [p.c2, p.u2, col2, 'v₂']].forEach(([c, v, col, lab]) => {
@@ -402,7 +408,7 @@ async function selectDeriv(id, scroll) {
   document.querySelectorAll('[data-drun]').forEach(b => b.setAttribute('aria-pressed', b.dataset.drun === id));
   $('dSelect').value = id;
   if (scroll) $('ableitung').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
-  $('dSub').textContent = `Messung ${run.id}: ${run.T.label} mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
+  $('dSub').textContent = `Messung ${run.id}: ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
   const raw = await loadRaw(run); if (dRun !== run) return;
   dWin = [Math.max(0, run.tc - 1.0), Math.min(raw.t[raw.t.length - 1], run.tc + 1.4)];
   $('dT').min = dWin[0]; $('dT').max = dWin[1];
