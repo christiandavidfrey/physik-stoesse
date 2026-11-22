@@ -161,6 +161,18 @@ td .swatch{margin-right:6px}
 .note{font-size:14px;color:var(--muted);margin:14px 0 0;line-height:1.5}
 .run{font:400 14px Calibri, Carlito, "Segoe UI", sans-serif;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:5px;padding:4px 9px;cursor:pointer}
 .run[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
+.picker{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--raised) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);box-shadow:0 6px 18px -12px rgba(0,0,0,.35)}
+.picker-in{max-width:1280px;margin:0 auto;padding:12px 24px 4px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.pick-l{font-weight:700;font-size:15px}
+.pick-groups{display:flex;flex-wrap:wrap;gap:8px 22px}
+.pick-g{display:inline-flex;flex-wrap:wrap;gap:5px;align-items:center}
+.pick-t{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-right:3px}
+.pick-g .run{min-width:34px}
+.pick-info{max-width:1280px;margin:0 auto;padding:2px 24px 12px;font-size:14px;color:var(--ink-2)}
+.pick-info b{color:var(--ink);margin-right:6px}
+@media (max-width:640px){.picker-in{padding:10px 16px 2px;flex-wrap:nowrap}.pick-groups{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.pick-g{flex-wrap:nowrap}.pick-info{padding:2px 16px 10px;font-size:13px}}
+#table tbody tr.sel td{background:color-mix(in srgb,var(--ink) 10%,transparent);font-weight:700}
+html{scroll-padding-top:120px}
 footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 .foot-in{max-width:1280px;margin:0 auto;padding:0 24px}
 </style>
@@ -170,36 +182,39 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <header class="masthead dark"><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
-  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Von der Simulation des Aufbaus über die Ableitung von Ort zu Beschleunigung bis zum Federmodell.</p>
+  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Wähle eine Messung, und die ganze Seite folgt: der Stoss wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
   <p class="meta">Messungen <b>13</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
 </div></header>
+
+<nav class="picker" aria-label="Messung wählen">
+  <div class="picker-in">
+    <span class="pick-l">Messung</span>
+    <div class="pick-groups" id="pickRuns"></div>
+  </div>
+  <p class="pick-info" id="pickInfo"></p>
+</nav>
 
 <main>
 
 <section id="aufbau" class="tint">
   <div class="col">
     <h2>Versuchsaufbau</h2>
-    <p class="lede">Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten. Beide Wagen tragen immer denselben Aufsatz: Feder, Schaumstoffkeil oder Klett. Wähle Aufsatz, Massen und Geschwindigkeiten und starte den Stoss. Die Simulation rechnet mit idealen Stössen.</p>
+    <p class="lede">Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten. Beide Wagen tragen immer denselben Aufsatz: Feder, Schaumstoffkeil oder Klett. Die Grafik spielt die oben gewählte Messung ab. Gefüllt sind die geglätteten Messwerte, gestrichelt umrandet ist, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</p>
   </div>
   <figure class="wide">
-    <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Der Stoss wird mit den eingestellten Werten simuliert."></canvas>
-    <div class="row" role="group" aria-label="Stossart">
-      <button class="btn" data-type="0"><span class="swatch" style="background:var(--c-el)"></span>Elastisch <small>Federn</small></button>
-      <button class="btn" data-type="1"><span class="swatch" style="background:var(--c-in)"></span>Teilelastisch <small>Schaumstoffkeile</small></button>
-      <button class="btn" data-type="2"><span class="swatch" style="background:var(--c-vi)"></span>Inelastisch <small>Klett</small></button>
-      <button class="btn play" id="sPlay" style="margin-left:auto">Stoss starten</button>
-    </div>
-    <div class="ctl">
-      <label>m₁ in kg <output id="o_sm1"></output><input type="range" id="sm1" min="0.1" max="1" step="0.05" value="0.25"></label>
-      <label>m₂ in kg <output id="o_sm2"></output><input type="range" id="sm2" min="0.1" max="1" step="0.05" value="0.5"></label>
-      <label>v₁ in m/s <output id="o_sv1"></output><input type="range" id="sv1" min="-0.6" max="-0.05" step="0.01" value="-0.4"></label>
-      <label>v₂ in m/s <output id="o_sv2"></output><input type="range" id="sv2" min="-0.2" max="0.4" step="0.01" value="0"></label>
+    <canvas class="track" id="setupCanvas" role="img" aria-label="Versuchsaufbau: Schiene mit zwei Wagen und Ultraschallsensoren. Die gewählte Messung wird abgespielt, das Federmodell als Umriss."></canvas>
+    <div class="row">
+      <button class="btn play" id="sPlay">Nochmals abspielen</button>
+      <span class="slabel" style="margin-left:12px">Tempo</span>
+      <button class="btn" data-speed="1" aria-pressed="true">Echtzeit</button>
+      <button class="btn" data-speed="0.25" aria-pressed="false">Zeitlupe ¼</button>
+      <span class="legend" style="margin:0 0 0 auto"><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="var(--ink)"/></svg>Messung</span><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="none" stroke="var(--muted)" stroke-dasharray="3 2" stroke-width="1.4"/></svg>Federmodell</span></span>
     </div>
     <div class="kpis dark black">
-      <div class="fig"><div>Impuls p → p′</div><strong id="r_p"></strong></div>
-      <div class="fig"><div>E<sub>kin</sub> → E<sub>kin</sub>′</div><strong id="r_E"></strong></div>
-      <div class="fig"><div>Energie erhalten / umgewandelt</div><strong><span class="v" id="r_keep"></span> <span>/</span> <span class="v" id="r_loss"></span></strong><div class="ebar" aria-hidden="true"><i class="kept" id="r_kept"></i><i class="lost" id="r_lost"></i></div></div>
+      <div class="fig"><div>Wagen 1: v₁ → v₁′</div><strong id="r_v1"></strong></div>
+      <div class="fig"><div>Wagen 2: v₂ → v₂′</div><strong id="r_v2"></strong></div>
       <div class="fig"><div>Stosszahl e</div><strong id="r_e"></strong></div>
+      <div class="fig"><div>m₂/m₁ aus der Impulserhaltung</div><strong id="r_ratio"></strong></div>
     </div>
   </figure>
 </section>
@@ -228,8 +243,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <p class="lede">Die Sensoren liefern nur den Ort. Die Geschwindigkeit ist die Steigung von x(t), die Beschleunigung die Steigung von v(t). Fahr mit der Maus oder dem Regler über die Zeitachse und lies die Tangenten ab.</p>
   </div>
   <figure class="wide">
-    <div class="row" id="dTabs" role="group" aria-label="Beispielmessung wählen"></div>
-    <div class="dbar">
+    <div class="dbar" style="margin-top:0">
       <div class="row"><span class="slabel">Wagen</span><button class="btn" data-cart="1" aria-pressed="true">Wagen 1</button><button class="btn" data-cart="2" aria-pressed="false">Wagen 2</button></div>
       <div class="ctl one tl-slider"><label>Zeitpunkt t <output id="o_dt"></output><input type="range" id="dT" min="0" max="5" step="0.005" value="1"></label></div>
     </div>
@@ -244,10 +258,31 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </figure>
 </section>
 
-<section id="auswertung" class="tint">
+<section id="modell" class="tint">
+  <div class="col">
+    <h2>Federmodell</h2>
+    <p class="lede">Nachbau unseres Berkeley-Madonna-Modells: Berühren sich die Wagen, drückt die Feder mit F = k·Δ, sonst wirkt keine Kraft. Gestartet wird mit Ort und Geschwindigkeit der oben gewählten Messung. Mit k = 1000 N/m dauert der Stoss im Modell nur Hundertstelsekunden, gemessen sind rund 0,2 s. Die reine Feder gibt alle Energie zurück, sagt also immer e = 1 voraus. Für Schaumstoff und Klett lässt sich als Erweiterung eine Dämpfung c zuschalten.</p>
+  </div>
+  <figure class="wide">
+    <div class="ctl">
+      <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
+      <label>Dämpfung c in N·s/m <output id="o_c"></output><input type="range" id="mc" min="0" max="20" step="0.5" value="0"></label>
+      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.1" max="1.5" step="0.01" value="0.25"></label>
+      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.1" max="1.5" step="0.01" value="0.5"></label>
+    </div>
+    <p class="note missing" id="modelMassNote">Die Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
+    <p class="callout" id="modelE"></p>
+    <div class="charts2">
+      <div><div class="slabel">Ort: Modell und Messung</div><div class="legend" id="lgMX"></div><div class="box" style="height:300px"><canvas id="chMX" role="img" aria-label="Modell und Messung, Ort gegen Zeit"></canvas></div></div>
+      <div><div class="slabel">Kinetische Energie im Modell</div><div class="legend" id="lgME"></div><div class="box" style="height:300px"><canvas id="chME" role="img" aria-label="Kinetische Energie im Modell gegen Zeit"></canvas></div></div>
+    </div>
+  </figure>
+</section>
+
+<section id="auswertung">
   <div class="col">
     <h2>Alle Messungen</h2>
-    <p class="lede">Für jede Stossart vier Aufbauten: leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken öffnet die Messung oben bei x, v und a.</p>
+    <p class="lede">Für jede Stossart vier Aufbauten: leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken wählt die Messung für die ganze Seite.</p>
     <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
   </div>
   <figure class="wide">
@@ -278,25 +313,6 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </div>
 </section>
 
-<section id="modell">
-  <div class="col">
-    <h2>Federmodell</h2>
-    <p class="lede">Nachbau unseres Berkeley-Madonna-Modells: Berühren sich die Wagen, drückt die Feder mit F = k·Δ, sonst wirkt keine Kraft. Start aus der gewählten Messung. Mit k = 1000 N/m dauert der Stoss im Modell nur Hundertstelsekunden, gemessen sind rund 0,2 s. Verkleinere k, bis die Kurven passen.</p>
-  </div>
-  <figure class="wide">
-    <div class="row" id="modelRuns"></div>
-    <div class="ctl three">
-      <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
-      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.1" max="1.5" step="0.01" value="0.25"></label>
-      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.1" max="1.5" step="0.01" value="0.5"></label>
-    </div>
-    <p class="note missing" id="modelMassNote">Die Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
-    <div class="charts2">
-      <div><div class="slabel">Ort: Modell und Messung</div><div class="legend" id="lgMX"></div><div class="box" style="height:300px"><canvas id="chMX" role="img" aria-label="Modell und Messung, Ort gegen Zeit"></canvas></div></div>
-      <div><div class="slabel">Kinetische Energie im Modell</div><div class="legend" id="lgME"></div><div class="box" style="height:300px"><canvas id="chME" role="img" aria-label="Kinetische Energie im Modell gegen Zeit"></canvas></div></div>
-    </div>
-  </figure>
-</section>
 
 </main>
 <footer class="dark black"><div class="foot-in">Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</div></footer>

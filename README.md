@@ -14,6 +14,10 @@ Seite: https://christiandavidfrey.github.io/physik-stoesse/
 | `data/rohdaten/Messung_<nr>.csv` | Rohdaten je Messung: `t_s, x1_m, x2_m` |
 | `lib/` | Chart.js und KaTeX (lokal, keine externen Server nötig) |
 
+## Aufbau der Seite
+
+Oben wählt man eine Messung (Link direkt auf eine Messung: `#m7`). Alle Abschnitte folgen der Auswahl: Die Aufbau-Grafik spielt den Stoss aus den geglätteten Messwerten ab und zeigt das Federmodell als gestrichelten Umriss, darunter folgen Ableitung x → v → a und das Federmodell (k, optional Dämpfung c, Massen).
+
 ## Aufsätze
 
 Beide Wagen tragen immer denselben Aufsatz: elastisch beide Feder, teilelastisch beide Schaumstoffkeil, inelastisch beide Klett.

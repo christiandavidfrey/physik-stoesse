@@ -123,7 +123,8 @@ async function loadRaw(run) {
   }
   const first = x2f.find(v => v !== null) ?? 0.28;
   for (let i = 0; i < x2f.length && x2f[i] === null; i++) x2f[i] = first;
-  return rawCache[run.id] = { t, x1, x2, x2f, v1, v2, a1, a2, s1, s2, D, lo: t[lo], hi: t[hi], J, amax };
+  const s2f = sg(x2f, SMOOTH, 0), v2f = sg(x2f, SMOOTH, 1);
+  return rawCache[run.id] = { t, x1, x2, x2f, s2f, v2f, v1, v2, a1, a2, s1, s2, D, lo: t[lo], hi: t[hi], J, amax };
 }
 
 // ===================== Weg-Zeit-Skizzen (Theorie) =====================
@@ -146,51 +147,35 @@ document.querySelectorAll('[data-strobe]').forEach(svg => {
     <text x="${px(0.05)}" y="${py(0.58) - 6}" font-family="Calibri, Carlito, sans-serif" font-size="13" fill="var(--ink-2)">W2</text>`;
 });
 
-// ===================== Versuchsaufbau (Simulation) =====================
-// Ruhige, berechnete Animation: keine Messdaten, kein Rauschen.
-const SIM = { L: 1.2, cart: 0.16, buf: 0.018,   // buf: Aufsatz je Wagen, beide Wagen tragen denselben
-  e: [1, 0.55, 0] };   // e für Schaumstoff ≈ Mittel unserer Messungen 9 bis 12
-const sEl = { m1: $('sm1'), m2: $('sm2'), v1: $('sv1'), v2: $('sv2') };
-let simType = 0, simTraj = [], simT0 = performance.now();
-function simParams() { return { m1: +sEl.m1.value, m2: +sEl.m2.value, v1: +sEl.v1.value, v2: +sEl.v2.value, e: SIM.e[simType] }; }
-function buildTraj() {
-  const { m1, m2, v1, v2, e } = simParams(), C = SIM.cart, gap = C + 2 * SIM.buf;
-  const lo = C / 2 + 0.02, hi = SIM.L - C / 2 - 0.02, h = 1 / 120;
-  let c1 = 0.92, c2 = 0.42, u1 = v1, u2 = v2, stuck = false, endAt = Infinity; const pts = [];
-  for (let t = 0; t <= 5 && t <= endAt; t += h) {
-    pts.push({ c1, c2, u1, u2 });
-    c1 += u1 * h; c2 += u2 * h;
-    if (stuck) c1 = c2 + gap;
-    if (!stuck && c1 - c2 <= gap && u1 - u2 < 0) {
-      [u1, u2] = collide(m1, m2, u1, u2, e); c1 = c2 + gap;
-      if (e === 0) stuck = true;
-    }
-    // Anschläge an den Schienenenden: Wagen bleibt stehen, Animation läuft noch kurz aus
-    if (c2 < lo) { c2 = lo; u2 = 0; if (stuck) { u1 = 0; c1 = c2 + gap; } if (endAt === Infinity) endAt = t + 0.7; }
-    if (c1 > hi) { c1 = hi; u1 = 0; if (stuck) { u2 = 0; c2 = c1 - gap; } if (endAt === Infinity) endAt = t + 0.7; }
-    if (Math.abs(u1) < 1e-4 && Math.abs(u2) < 1e-4 && t > 0.3 && endAt === Infinity) endAt = t + 0.5;
-  }
-  simTraj = pts;
+// ===================== Versuchsaufbau: gewählte Messung abspielen =====================
+// Gefüllte Wagen: geglättete Messwerte (Savitzky-Golay, kein Rohrauschen). Umriss: Federmodell mit denselben Startwerten.
+const SIM = { L: 1.2, cart: 0.16, buf: 0.018 };   // buf: Aufsatz je Wagen, beide Wagen tragen denselben
+const ani = { run: null, raw: null, model: null, tA: 0, tB: 0, start: 0, speed: 1, playing: false, frozen: 0 };
+function setupLoad(run, raw) {
+  Object.assign(ani, { run, raw, tA: Math.max(0, run.tc - 1.0), tB: Math.min(raw.t[raw.t.length - 1], run.tc + 1.4) });
+  fillSetupFigures();
+  playSetup(!reduceMotion);
 }
-function updateSetup(restart = true) {
-  const { m1, m2, v1, v2, e } = simParams();
-  $('o_sm1').textContent = fmt(m1, 2); $('o_sm2').textContent = fmt(m2, 2);
-  $('o_sv1').textContent = fmt(v1, 2); $('o_sv2').textContent = fmt(v2, 2);
-  document.querySelectorAll('[data-type]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.type === simType));
-  const approach = v1 - v2 < 0;
-  const [u1, u2] = approach ? collide(m1, m2, v1, v2, e) : [v1, v2];
-  const p0 = m1 * v1 + m2 * v2, p1 = m1 * u1 + m2 * u2;
-  const E0 = .5 * m1 * v1 ** 2 + .5 * m2 * v2 ** 2, E1 = .5 * m1 * u1 ** 2 + .5 * m2 * u2 ** 2, keep = E0 > 0 ? E1 / E0 : 1;
-  $('r_p').innerHTML = `${fmt(p0)} <span>→</span> ${fmt(p1)}<span class="u">kg·m/s</span>`;
-  $('r_E').innerHTML = `${fmt(E0 * 1000, 1)} <span>→</span> ${fmt(E1 * 1000, 1)}<span class="u">mJ</span>`;
-  $('r_kept').style.width = keep * 100 + '%'; $('r_lost').style.width = (1 - keep) * 100 + '%';
-  $('r_keep').textContent = fmt(keep * 100, 0) + ' %'; $('r_loss').textContent = fmt((1 - keep) * 100, 0) + ' %'; $('r_e').textContent = fmt(e, 2);
-  buildTraj();
-  if (restart) simT0 = performance.now();
+function playSetup(on = true) { ani.start = performance.now(); ani.playing = on; ani.frozen = on ? ani.tA : ani.tB; }
+function setupTime() {
+  if (!ani.playing) return ani.frozen;
+  const t = ani.tA + (performance.now() - ani.start) / 1000 * ani.speed;
+  if (t >= ani.tB) { ani.playing = false; ani.frozen = ani.tB; }
+  return Math.min(t, ani.tB);
 }
-Object.values(sEl).forEach(el => el.addEventListener('input', () => updateSetup()));
-document.querySelectorAll('[data-type]').forEach(b => b.addEventListener('click', () => { simType = +b.dataset.type; updateSetup(); }));
-$('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
+function fillSetupFigures() {
+  const r = ani.run; if (!r) return;
+  const m = ani.model, eM = m ? m.e : NaN;
+  const set = (id, html) => { $(id).innerHTML = html; };
+  set('r_v1', `${fmt(r.v1, 2)} <span>→</span> ${fmt(r.u1, 2)}<span class="u">m/s, Wagen 1</span>`);
+  set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}<span class="u">m/s, Wagen 2</span>`);
+  set('r_e', `${fmt(Math.max(r.e, 0), 2)}<span class="u">Modell: ${fmt(eM, 2)}</span>`);
+  set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 1)} (${r.aufbau})</span>`);
+}
+document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
+  ani.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); playSetup();
+}));
+$('sPlay').addEventListener('click', () => playSetup());
 
 (function setupCanvas() {
   const canvas = $('setupCanvas'), ctx = canvas.getContext('2d');
@@ -204,14 +189,17 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
     const d = Math.sign(x1 - x0) || 1; ctx.beginPath(); ctx.moveTo(x1 + d * 2, y); ctx.lineTo(x1 - d * 7, y - 5); ctx.lineTo(x1 - d * 7, y + 5); ctx.fill();
   }
   function draw() {
-    if (!simTraj.length) return;
+    const run = ani.run, raw = ani.raw; if (!run || !raw || !W) return;
     const k = Math.min(1, H / 250), padL = 64 * Math.max(.7, k), padR = 64 * Math.max(.7, k), sc = (W - padL - padR) / SIM.L, X = x => padL + x * sc;
     const railY = H - 52 * k, bodyH = 30 * k, wr = 5 * k, bodyTop = railY - 2 * wr - bodyH;
-    const { m1, m2 } = simParams();
-    const t = reduceMotion ? 0 : (performance.now() - simT0) / 1000;
-    const i = Math.min(simTraj.length - 1, Math.floor(t * 120)), p = simTraj[i];
     const muted = css('--muted'), ink = css('--ink'), ink2 = css('--ink-2'), rail = css('--rail'), raised = css('--raised');
     const col1 = css('--ink'), col2 = css('--w2');
+    const C = SIM.cart, gap = C + 2 * SIM.buf;
+    // Sensorwert → Wagenmitte: x2 misst die Heckplatte links, bei Berührung ist x1 − x2 = D
+    const off1 = raw.D - C / 2 - gap, c1of = x => x - off1, c2of = x => x + C / 2;
+    const t = setupTime(), i = Math.min(raw.t.length - 1, Math.max(0, Math.round(t / DT)));
+    const x1 = raw.s1[i] ?? raw.x1[i], x2 = raw.s2f[i] ?? raw.x2f[i];
+    const p = { c1: c1of(x1), c2: c2of(x2), u1: raw.v1[i] ?? 0, u2: raw.v2f[i] ?? 0 };
     ctx.clearRect(0, 0, W, H);
     // Schiene, Anschläge, Massstab
     ctx.fillStyle = rail; ctx.fillRect(X(0), railY, SIM.L * sc, 7 * k);
@@ -223,6 +211,10 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
       if (major) ctx.fillText(fmt(x, 1), px, railY + 32 * k);
     }
     ctx.textAlign = 'left'; ctx.fillText('x in m', X(SIM.L) - 30, railY + 46 * k > H - 2 ? H - 2 : railY + 46 * k);
+    // Zeit und Stossphase
+    ctx.font = font(700, 15); ctx.fillStyle = ink; ctx.textAlign = 'left';
+    ctx.fillText(`t = ${fmt(t, 2)} s`, 4, 18);
+    if (t >= raw.lo && t <= raw.hi) { ctx.font = font(700, 13); ctx.fillStyle = muted; ctx.fillText('STOSS', 4, 36); }
     // Ultraschallsensoren: links Sensor 2 (misst Wagen 2), rechts Sensor 1 (misst Wagen 1)
     const plateTop = bodyTop - 40 * k, beam = plateTop + 12 * k, sw = 22 * k, sh = 18 * k;
     ctx.fillStyle = ink2;
@@ -232,43 +224,53 @@ $('sPlay').addEventListener('click', () => { simT0 = performance.now(); });
     ctx.fillStyle = muted; ctx.font = font(500, 13); ctx.textAlign = 'center';
     ctx.fillText('Sensor 2', X(0) - sw / 2 - 10, beam - sh / 2 - 8); ctx.fillText('Sensor 1', X(SIM.L) + sw / 2 + 10, beam - sh / 2 - 8);
     // Wagen
-    const C = SIM.cart;
-    function cart(c, col, label, m, rear) {   // rear = −1: Heck links, +1: Heck rechts
+    const [w1, w2] = defaultMasses(run);   // nur für die Höhe des Zusatzgewichts (leicht/schwer)
+    const by = bodyTop + bodyH * .2, bh = bodyH * .6, bl = SIM.buf * sc, ti = TYPES.indexOf(run.T);
+    function buffer(face, dir, col) {   // dir = −1: Aufsatz zeigt nach links, +1: nach rechts
+      const tip = face + dir * bl, a = Math.min(face, tip), b = Math.max(face, tip);
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.6;
+      if (ti === 0) { ctx.beginPath(); ctx.moveTo(face, by + bh / 2); const n = 5; for (let j = 1; j <= n; j++) ctx.lineTo(face + dir * bl * j / n, by + (j % 2 ? 0 : bh)); ctx.stroke(); ctx.fillRect(dir < 0 ? tip - 2 : tip, by, 2, bh); }
+      else if (ti === 1) { ctx.globalAlpha = .55; ctx.beginPath(); ctx.moveTo(face, by - 2); ctx.lineTo(tip, by + bh * .25); ctx.lineTo(tip, by + bh * .75); ctx.lineTo(face, by + bh + 2); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }
+      else { ctx.fillRect(a, by - 2, b - a, bh + 4); ctx.strokeStyle = raised; ctx.lineWidth = 1; for (let yy = by; yy < by + bh; yy += 4) { ctx.beginPath(); ctx.moveTo(a, yy); ctx.lineTo(b, yy + 3); ctx.stroke(); } }
+    }
+    function cart(c, col, label, mRel, mText, rear) {   // rear = −1: Heck links, +1: Heck rechts
       const x = X(c - C / 2), w = C * sc;
       ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, bodyTop, w, bodyH, 4); ctx.fill();
       [x + w * .2, x + w * .8].forEach(cx => { ctx.beginPath(); ctx.arc(cx, railY - wr, wr, 0, 7); ctx.fill(); });
-      // Zusatzgewicht: Höhe wächst mit der Masse
-      const wh = (6 + 26 * (m - 0.1) / 0.9) * k;
+      const wh = (6 + 26 * (mRel - 0.1) / 0.9) * k;
       ctx.fillStyle = ink2; ctx.globalAlpha = .85; ctx.beginPath(); ctx.roundRect(x + w * .3, bodyTop - wh, w * .45, wh, 2); ctx.fill(); ctx.globalAlpha = 1;
       // Reflektorplatte am Heck, ragt nach oben
       ctx.fillStyle = col; ctx.fillRect(rear < 0 ? x : x + w - 5, plateTop, 5, bodyTop - plateTop + 2);
-      ctx.fillStyle = raised; ctx.font = font(600, 16); ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, bodyTop + bodyH / 2 + 5);
-      ctx.fillStyle = ink; ctx.font = font(600, 14); ctx.fillText(fmt(m, 2) + ' kg', x + w * .52, bodyTop - wh - 5);
+      ctx.fillStyle = raised; ctx.font = font(600, w > 70 ? 16 : 11); ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, bodyTop + bodyH / 2 + (w > 70 ? 5 : 4));
+      if (w > 70) { ctx.fillStyle = mText.miss ? muted : ink; ctx.font = font(mText.miss ? 500 : 600, 13); ctx.fillText(mText.s, x + w * .52, bodyTop - wh - 5); }
+      buffer(rear < 0 ? x + w : x, -rear, col);
+    }
+    function ghost(c, col) {   // Modell als gestrichelter Umriss
+      const x = X(c - C / 2), w = C * sc;
+      ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.roundRect(x, bodyTop - 4, w, bodyH + 8, 5); ctx.stroke(); ctx.restore();
     }
     // Ultraschall zur Heckplatte des jeweiligen Wagens
     ctx.setLineDash([4, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
     const plate2 = X(p.c2 - C / 2), plate1 = X(p.c1 + C / 2);
     ctx.beginPath(); ctx.moveTo(X(0) - 10, beam); ctx.lineTo(plate2, beam); ctx.moveTo(X(SIM.L) + 10, beam); ctx.lineTo(plate1, beam); ctx.stroke(); ctx.setLineDash([]);
-    cart(p.c2, col2, 'W2', m2, -1);
-    cart(p.c1, col1, 'W1', m1, 1);
-    // Aufsätze: beide Wagen tragen immer denselben (Feder, Schaumstoffkeil oder Klett), einander zugewandt
-    const by = bodyTop + bodyH * .2, bh = bodyH * .6, bl = SIM.buf * sc;
-    function buffer(face, dir, col) {   // dir = −1: Aufsatz zeigt nach links, +1: nach rechts
-      const tip = face + dir * bl, a = Math.min(face, tip), b = Math.max(face, tip);
-      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.6;
-      if (simType === 0) { ctx.beginPath(); ctx.moveTo(face, by + bh / 2); const n = 5; for (let j = 1; j <= n; j++) ctx.lineTo(face + dir * bl * j / n, by + (j % 2 ? 0 : bh)); ctx.stroke(); ctx.fillRect(dir < 0 ? tip - 2 : tip, by, 2, bh); }
-      else if (simType === 1) { ctx.globalAlpha = .55; ctx.beginPath(); ctx.moveTo(face, by - 2); ctx.lineTo(tip, by + bh * .25); ctx.lineTo(tip, by + bh * .75); ctx.lineTo(face, by + bh + 2); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }
-      else { ctx.fillRect(a, by - 2, b - a, bh + 4); ctx.strokeStyle = raised; ctx.lineWidth = 1; for (let yy = by; yy < by + bh; yy += 4) { ctx.beginPath(); ctx.moveTo(a, yy); ctx.lineTo(b, yy + 3); ctx.stroke(); } }
+    const mt = (m, n) => ok(m) ? { s: fmt(m, 3) + ' kg' } : { s: `m${n} fehlt`, miss: true };
+    cart(p.c2, col2, 'W2', w2, mt(run.m2, '₂'), -1);
+    cart(p.c1, col1, 'W1', w1, mt(run.m1, '₁'), 1);
+    // Modell: nur im simulierten Zeitfenster
+    const M = ani.model;
+    if (M && t >= M.t0 && t <= M.t1) {
+      const q = M.out[Math.min(M.out.length - 1, Math.round((t - M.t0) / DT))];
+      const cl = c => Math.min(SIM.L - C / 2, Math.max(C / 2, c));   // Modell kennt keine Schienenenden
+      ghost(cl(c2of(q.x2)), muted); ghost(cl(c1of(q.x1)), muted);
     }
-    buffer(X(p.c1 - C / 2), -1, col1);
-    buffer(X(p.c2 + C / 2), 1, col2);
-    // Geschwindigkeitspfeile oben
+    // Geschwindigkeitspfeile oben (gemessen)
     const ay = 16 * k + 8;
     [[p.c1, p.u1, col1, 'v₁'], [p.c2, p.u2, col2, 'v₂']].forEach(([c, v, col, lab]) => {
       const x0 = X(c); ctx.font = font(600, 14); ctx.fillStyle = col; ctx.textAlign = 'center';
-      if (Math.abs(v) < 0.005) { ctx.fillText(`${lab} = 0`, x0, ay + 4); return; }
+      if (Math.abs(v) < 0.01) { if (W > 700) ctx.fillText(`${lab} = 0`, x0, ay + 4); return; }
       arrow(x0, x0 + v * 140 * Math.max(.6, k), ay + 14 * k, col);
-      ctx.fillText(`${lab} = ${fmt(v, 2)} m/s`, x0, ay);
+      ctx.fillText(W > 700 ? `${lab} = ${fmt(v, 2)} m/s` : lab, x0, ay);
     });
   }
   function frame() { draw(); requestAnimationFrame(frame); }
@@ -327,7 +329,7 @@ function renderTable() {
     <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
     <td>${ok(r.m1) ? fmt(r.m1) : missing}</td><td>${ok(r.m2) ? fmt(r.m2) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
-  $('table').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => selectDeriv(tr.dataset.run, true)));
+  $('table').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => selectRun(tr.dataset.run, true)));
   $('massNote').style.display = RUNS.every(r => r.hasMass) ? 'none' : '';
 }
 
@@ -390,25 +392,13 @@ const cursorPlugin = {
 };
 Chart.register(cursorPlugin);
 
-const DEMO = ['3', '11', '7'];   // je Stossart eine Beispielmessung: gleich schwere Wagen, einer ruht
 let dRun = null, dCart = 1, dTime = 1, dWin = [0, 5];
 function cartSeries(raw) {
   return dCart === 1 ? { x: raw.x1, xs: raw.s1, v: raw.v1, a: raw.a1 } : { x: raw.x2, xs: raw.s2, v: raw.v2, a: raw.a2 };
 }
-function renderTabs() {
-  $('dTabs').innerHTML = TYPES.map((T, i) => {
-    const r = RUNS.find(r => r.id === DEMO[i]) || RUNS.find(r => r.T === T); if (!r) return '';
-    return `<button class="btn" data-drun="${r.id}"><span class="swatch" style="background:var(${T.color})"></span>${T.label} <small>Messung ${r.id}</small></button>`;
-  }).join('') + `<label style="display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--ink-2)">Andere Messung <select id="dSelect" style="font:inherit">${RUNS.map(r => `<option value="${r.id}">Nr. ${r.id}, ${r.T.label.toLowerCase()}</option>`).join('')}</select></label>`;
-  $('dTabs').querySelectorAll('[data-drun]').forEach(b => b.addEventListener('click', () => selectDeriv(b.dataset.drun)));
-  $('dSelect').addEventListener('change', e => selectDeriv(e.target.value));
-}
-async function selectDeriv(id, scroll) {
+async function selectDeriv(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
   dRun = run;
-  document.querySelectorAll('[data-drun]').forEach(b => b.setAttribute('aria-pressed', b.dataset.drun === id));
-  $('dSelect').value = id;
-  if (scroll) $('ableitung').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
   $('dSub').textContent = `Messung ${run.id}: ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}`;
   const raw = await loadRaw(run); if (dRun !== run) return;
   dWin = [Math.max(0, run.tc - 1.0), Math.min(raw.t[raw.t.length - 1], run.tc + 1.4)];
@@ -463,7 +453,7 @@ document.querySelectorAll('[data-cart]').forEach(b => b.addEventListener('click'
 }));
 
 // ===================== Federmodell =====================
-const mk = $('mk'), mm1 = $('mm1'), mm2 = $('mm2');
+const mk = $('mk'), mc = $('mc'), mm1 = $('mm1'), mm2 = $('mm2');
 function defaultMasses(run) {
   if (run.hasMass) return [run.m1, run.m2];
   return { 'leicht→schwer': [0.25, 0.5], 'schwer→leicht': [0.5, 0.25] }[run.aufbau] || [0.25, 0.25];
@@ -471,30 +461,33 @@ function defaultMasses(run) {
 async function selectModelRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
   modelRun = run;
-  document.querySelectorAll('[data-mrun]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mrun === id));
   const [a, b] = defaultMasses(run); mm1.value = a; mm2.value = b;
   $('modelMassNote').style.display = run.hasMass ? 'none' : '';
   await loadRaw(run); renderModel();
 }
-function simulate(run, raw, k, m1, m2) {
-  const t0 = Math.max(0, run.tc - 0.5), t1 = Math.min(5, run.tc + 1.3), i0 = Math.round(t0 / DT);
+function simulate(run, raw, k, m1, m2, c = 0) {
+  const t0 = Math.max(0, run.tc - 0.5), t1 = Math.min(5, run.tc + 1.4), i0 = Math.round(t0 / DT);
   const avg = (arr, i) => { let s = 0, n = 0; for (let j = i - 4; j <= i + 4; j++) if (arr[j] !== null && arr[j] !== undefined) { s += arr[j]; n++; } return s / n; };
   let x1 = avg(raw.x1, i0), x2 = avg(raw.x2, i0), v1 = run.v1, v2 = run.v2;
   if (!ok(x2)) x2 = raw.x2f[i0];
   const h = 1e-4, every = Math.round(DT / h), out = [];
   for (let s = 0, t = t0; t <= t1; s++, t += h) {
-    const d = raw.D - (x1 - x2), F = d > 0 ? k * d : 0;
+    // Feder F = k·Δ wie im Berkeley-Madonna-Modell; optional Dämpfung c·dΔ/dt (zieht nie, nur Druck)
+    const d = raw.D - (x1 - x2), F = d > 0 ? Math.max(0, k * d + c * (v2 - v1)) : 0;
     if (s % every === 0) out.push({ t, x1, x2, E1: .5 * m1 * v1 * v1, E2: .5 * m2 * v2 * v2, Ef: d > 0 ? .5 * k * d * d : 0 });
     v1 += F / m1 * h; v2 -= F / m2 * h; x1 += v1 * h; x2 += v2 * h;   // semi-implizites Euler-Verfahren
   }
-  return { out, t0, t1 };
+  const e = -(v1 - v2) / (run.v1 - run.v2);   // Stosszahl, die das Modell am Ende liefert
+  return { out, t0, t1, e: Math.max(0, e), u1: v1, u2: v2 };
 }
 function renderModel() {
   const run = modelRun, raw = run && rawCache[run.id]; if (!raw) return;
-  const k = +mk.value, m1 = +mm1.value, m2 = +mm2.value;
-  $('o_k').textContent = k; $('o_mm1').textContent = fmt(m1, 2); $('o_mm2').textContent = fmt(m2, 2);
+  const k = +mk.value, c = +mc.value, m1 = +mm1.value, m2 = +mm2.value;
+  $('o_k').textContent = k; $('o_c').textContent = fmt(c, 1); $('o_mm1').textContent = fmt(m1, 2); $('o_mm2').textContent = fmt(m2, 2);
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2'), ink = css('--ink-2'), muted = css('--muted');
-  const { out, t0, t1 } = simulate(run, raw, k, m1, m2);
+  const sim = simulate(run, raw, k, m1, m2, c), { out, t0, t1 } = sim;
+  if (ani.run === run) { ani.model = sim; fillSetupFigures(); }
+  $('modelE').innerHTML = `Stosszahl gemessen <b>${fmt(Math.max(run.e, 0), 2)}</b>, im Modell <b>${fmt(sim.e, 2)}</b>. Endgeschwindigkeiten im Modell: v₁′ = ${fmt(sim.u1, 2)} m/s, v₂′ = ${fmt(sim.u2, 2)} m/s (gemessen ${fmt(run.u1, 2)} und ${fmt(run.u2, 2)} m/s).`;
   const meas = arr => arr.map((y, i) => (y === null || raw.t[i] < t0 || raw.t[i] > t1 || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
   const xs = { type: 'linear', min: t0, max: t1, grid: o.grid, ticks: { ...o.ticks, callback: deNum(1) }, title: o.axisTitle('t in s') };
   legend('lgMX', [[shapeSVG.dots(c1), 'Wagen 1 gemessen'], [shapeSVG.line(c1), 'Wagen 1 Modell'], [shapeSVG.dots(c2), 'Wagen 2 gemessen'], [shapeSVG.line(c2), 'Wagen 2 Modell']]);
@@ -515,10 +508,33 @@ function renderModel() {
       plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, 1)} mJ` } } },
       scales: { x: xs, y: { beginAtZero: true, grid: o.grid, ticks: { ...o.ticks, callback: deNum(0) }, border: { display: false }, title: o.axisTitle('E in mJ') } } } });
 }
-[mk, mm1, mm2].forEach(el => el.addEventListener('input', renderModel));
+[mk, mc, mm1, mm2].forEach(el => el.addEventListener('input', renderModel));
+
+// ===================== Auswahl: eine Messung für die ganze Seite =====================
+let SEL = null;
+function renderPicker() {
+  $('pickRuns').innerHTML = TYPES.map(T => {
+    const rs = RUNS.filter(r => r.T === T); if (!rs.length) return '';
+    return `<span class="pick-g"><span class="pick-t"><span class="swatch" style="background:var(${T.color})"></span>${T.label}</span>${rs.map(r => `<button class="run" data-sel="${r.id}" aria-pressed="false" title="${AUFBAU_TEXT[r.aufbau] || r.aufbau}">${r.id}</button>`).join('')}</span>`;
+  }).join('');
+  $('pickRuns').querySelectorAll('[data-sel]').forEach(b => b.addEventListener('click', () => selectRun(b.dataset.sel)));
+}
+async function selectRun(id, scroll) {
+  const run = RUNS.find(r => r.id === id); if (!run) return;
+  SEL = run;
+  document.querySelectorAll('[data-sel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sel === id));
+  document.querySelectorAll('#table tbody tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.run === id));
+  $('pickInfo').innerHTML = `<b>Messung ${run.id}</b> ${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${fmt(run.m1)} kg, m₂ = ${fmt(run.m2)} kg` : '<span class="missing">Massen fehlen noch</span>'}`;
+  try { history.replaceState(null, '', '#m' + run.id); } catch (_) {}
+  if (scroll) $('aufbau').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  const raw = await loadRaw(run); if (SEL !== run) return;
+  ani.model = null; ani.run = run; ani.raw = raw;
+  await selectModelRun(id);
+  setupLoad(run, raw);
+  selectDeriv(id);
+}
 
 // ===================== Start =====================
-updateSetup();
 function renderAll() {
   renderOverviewCharts();
   renderDeriv();
@@ -527,14 +543,11 @@ function renderAll() {
 fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
   .then(text => {
     RUNS = parseRuns(text);
-    renderTable(); renderTabs();
-    const elastic = RUNS.filter(r => r.T === TYPES[0]);
-    $('modelRuns').innerHTML = 'Messung ' + elastic.map(r => `<button class="run" data-mrun="${r.id}" aria-pressed="false">Nr. ${r.id}</button>`).join('');
-    $('modelRuns').querySelectorAll('[data-mrun]').forEach(b => b.addEventListener('click', () => selectModelRun(b.dataset.mrun)));
+    renderTable(); renderPicker();
+    const fromHash = (location.hash.match(/^#m([\d.]+)$/) || [])[1];
     return document.fonts.ready.then(() => {
       renderOverviewCharts();
-      selectDeriv(DEMO[0], false);
-      if (elastic.length) selectModelRun(elastic[0].id);
+      selectRun(RUNS.some(r => r.id === fromHash) ? fromHash : '3');
     });
   })
   .catch(err => {
