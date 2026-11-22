@@ -15,6 +15,7 @@
   --rule:#DDDDDD; --rail:#BDBDBD; --w2:#9A9A9A;
   --c-el:#111111; --c-in:#6E6E6E; --c-vi:#ADADAD; --c-before:#D0D0D0;
   --accent:#111111; --focus:#111111; --warn:#111111;
+  --band-tint:#EEEEEE; --band-deep:#E3E3E3; --band-dark:#141414; --band-black:#0A0A0A;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
@@ -23,6 +24,7 @@
     --rule:#2E2E2E; --rail:#555555; --w2:#8C8C8C;
     --c-el:#F0F0F0; --c-in:#9E9E9E; --c-vi:#5E5E5E; --c-before:#3A3A3A;
     --accent:#F0F0F0; --focus:#F0F0F0; --warn:#F0F0F0;
+    --band-tint:#202020; --band-deep:#262626; --band-dark:#0B0B0B; --band-black:#000000;
     color-scheme:dark;
   }
 }
@@ -31,6 +33,7 @@
   --rule:#2E2E2E; --rail:#555555; --w2:#8C8C8C;
   --c-el:#F0F0F0; --c-in:#9E9E9E; --c-vi:#5E5E5E; --c-before:#3A3A3A;
   --accent:#F0F0F0; --focus:#F0F0F0; --warn:#F0F0F0;
+  --band-tint:#202020; --band-deep:#262626; --band-dark:#0B0B0B; --band-black:#000000;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -46,13 +49,21 @@ a{color:var(--accent)}
 .mid{max-width:960px;margin:72px auto 0;padding:0 24px}
 .wide{max-width:1280px;margin:80px auto 0;padding:0 24px}
 figure{display:block}
-section{padding:200px 0 0}
-section + section{margin-top:40px}
+section{padding:170px 0 170px;counter-increment:kap}
+main{counter-reset:kap}
 section > .col:first-child{padding-top:0}
-.masthead{padding-top:160px;padding-bottom:40px}
+section h2::before{content:counter(kap,decimal-leading-zero);display:block;margin-bottom:14px;font:700 15px/1 Calibri, Carlito, sans-serif;letter-spacing:.14em;color:var(--muted)}
+/* Tiefe: Bänder in abgestuften Grautönen, randlos über die ganze Breite */
+.tint{background:var(--band-tint)}
+.tint .tablewrap, .tint select{background:transparent}
+.dark{--ink:#F2F2F2; --ink-2:#C4C4C4; --muted:#8E8E8E; --rule:#333333; --raised:var(--band-dark); --accent:#F2F2F2; --focus:#F2F2F2;
+  --c-el:#F2F2F2; --c-in:#A0A0A0; --c-vi:#5E5E5E; background:var(--band-dark); color:var(--ink)}
+.black{--raised:var(--band-black); background:var(--band-black)}
+.masthead{padding:170px 0 120px;background:linear-gradient(180deg,var(--band-black) 0%,var(--band-dark) 100%)}
+.masthead .meta{border-top:1px solid var(--rule);padding-top:22px}
 .kicker{margin:0 0 14px;color:var(--muted);font-size:15px;letter-spacing:.02em}
 .masthead h1{margin:0;font:700 64px/1.02 Calibri, Carlito, "Segoe UI", sans-serif;letter-spacing:-.015em}
-@media (max-width:640px){.masthead h1{font-size:44px}.masthead{padding-top:80px}section{padding-top:120px}.wide,.mid{margin-top:48px}}
+@media (max-width:640px){.masthead h1{font-size:44px}.masthead{padding:88px 0 64px}section{padding:96px 0}.wide,.mid{margin-top:48px}}
 .deck{font-size:22px;line-height:1.5;color:var(--ink-2);margin:36px 0 0}
 .meta{display:flex;flex-wrap:wrap;gap:8px 26px;margin:44px 0 0;color:var(--muted);font-size:15px}
 .meta b{color:var(--ink);font-weight:700}
@@ -150,22 +161,22 @@ td .swatch{margin-right:6px}
 .note{font-size:14px;color:var(--muted);margin:14px 0 0;line-height:1.5}
 .run{font:400 14px Calibri, Carlito, "Segoe UI", sans-serif;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:5px;padding:4px 9px;cursor:pointer}
 .run[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
-footer{width:100%;color:var(--muted);font-size:14px;padding:36px 0 96px;margin-top:220px;border-top:1px solid var(--rule)}
+footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 .foot-in{max-width:1280px;margin:0 auto;padding:0 24px}
 </style>
 </head>
 <body>
 
-<header class="masthead col">
+<header class="masthead dark"><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
   <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Von der Simulation des Aufbaus über die Ableitung von Ort zu Beschleunigung bis zum Federmodell.</p>
   <p class="meta">Messungen <b>13</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
-</header>
+</div></header>
 
 <main>
 
-<section id="aufbau">
+<section id="aufbau" class="tint">
   <div class="col">
     <h2>Versuchsaufbau</h2>
     <p class="lede">Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten. Beide Wagen tragen immer denselben Aufsatz: Feder, Schaumstoffkeil oder Klett. Wähle Aufsatz, Massen und Geschwindigkeiten und starte den Stoss. Die Simulation rechnet mit idealen Stössen.</p>
@@ -184,7 +195,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:36px 0 96px;margin-t
       <label>v₁ in m/s <output id="o_sv1"></output><input type="range" id="sv1" min="-0.6" max="-0.05" step="0.01" value="-0.4"></label>
       <label>v₂ in m/s <output id="o_sv2"></output><input type="range" id="sv2" min="-0.2" max="0.4" step="0.01" value="0"></label>
     </div>
-    <div class="kpis">
+    <div class="kpis dark black">
       <div class="fig"><div>Impuls p → p′</div><strong id="r_p"></strong></div>
       <div class="fig"><div>E<sub>kin</sub> → E<sub>kin</sub>′</div><strong id="r_E"></strong></div>
       <div class="fig"><div>Energie erhalten / umgewandelt</div><strong><span class="v" id="r_keep"></span> <span>/</span> <span class="v" id="r_loss"></span></strong><div class="ebar" aria-hidden="true"><i class="kept" id="r_kept"></i><i class="lost" id="r_lost"></i></div></div>
@@ -193,7 +204,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:36px 0 96px;margin-t
   </figure>
 </section>
 
-<section id="theorie">
+<section id="theorie" class="dark">
   <div class="col">
     <h2>Grundlagen</h2>
     <p class="lede">Vier Beziehungen tragen die ganze Auswertung. Wagen 1 ist immer der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
@@ -233,7 +244,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:36px 0 96px;margin-t
   </figure>
 </section>
 
-<section id="auswertung">
+<section id="auswertung" class="tint">
   <div class="col">
     <h2>Alle Messungen</h2>
     <p class="lede">Für jede Stossart vier Aufbauten: leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Eine Zeile anklicken öffnet die Messung oben bei x, v und a.</p>
@@ -288,7 +299,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:36px 0 96px;margin-t
 </section>
 
 </main>
-<footer><div class="foot-in">Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</div></footer>
+<footer class="dark black"><div class="foot-in">Physik 1, Praktikum 9 „Stoss“, Messungen vom 14.11.2026. Daten: data/messungen.csv und data/rohdaten/.</div></footer>
 
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/chart.umd.min.js"></script>
