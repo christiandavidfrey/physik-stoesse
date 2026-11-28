@@ -11,6 +11,7 @@ const fmt = (x, d = 3) => ok(x) ? (Math.round(x * 10 ** d) / 10 ** d).toFixed(d)
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const DT = 0.005;           // 200 Hz
 const X2_MIN = 0.199;       // Sensor 2 misst darunter nichts Sinnvolles
+const X1_MAX = 1.021;       // Sensor 1 entsprechend: Wagen 1 näher als ~20 cm an Sensor 1 (Rohwert klebt bei 1,0226 m)
 const SMOOTH = 31;          // Fensterbreite für Ableitungen (31 Punkte = 0,15 s)
 
 document.querySelectorAll('[data-tex]').forEach(el => {
@@ -114,12 +115,12 @@ async function loadRaw(run) {
   if (!res.ok) throw new Error('Rohdaten fehlen: Messung ' + run.id);
   const [, ...rows] = parseCSV(await res.text());
   const t = [], x1 = [], x2 = [];
-  rows.forEach(r => { t.push(+r[0]); x1.push(+r[1]); const b = +r[2]; x2.push(b > X2_MIN ? b : null); });
+  rows.forEach(r => { t.push(+r[0]); const q = +r[1]; x1.push(q < X1_MAX ? q : null); const b = +r[2]; x2.push(b > X2_MIN ? b : null); });
   const v1 = sg(x1, SMOOTH, 1), v2 = sg(x2, SMOOTH, 1), a1 = sg(x1, SMOOTH, 2), a2 = sg(x2, SMOOTH, 2), s1 = sg(x1, SMOOTH, 0), s2 = sg(x2, SMOOTH, 0);
   const ic = Math.round(run.tc / DT);
   // Abstand der Messpunkte bei Berührung (hängt vom Puffer ab)
   let D = 0, n = 0;
-  for (let i = ic - 2; i <= ic + 2; i++) if (x2[i] !== null) { D += x1[i] - x2[i]; n++; }
+  for (let i = ic - 2; i <= ic + 2; i++) if (x2[i] !== null && x1[i] !== null) { D += x1[i] - x2[i]; n++; }
   D = n ? D / n : 0.45;
   // Stossfenster aus a1(t): um das Maximum, solange |a| > 10 % davon
   let ip = ic, amax = 0;
@@ -135,12 +136,25 @@ async function loadRaw(run) {
     if (last === null) continue;
     last = Math.max(0.14, last + (ok(run.u2) ? Math.min(lastV, 0) || run.u2 : lastV) * DT); x2f[i] = last;
   }
+  // x1 ebenso lückenlos: in der Totzone von Sensor 1 mit der letzten bzw. ersten gemessenen Geschwindigkeit
+  const X1_END = 1.08, x1f = x1.slice();
+  { let l = null, lv = 0;
+    for (let i = 0; i < x1f.length; i++) {
+      if (x1[i] !== null) { l = x1[i]; lv = v1[i] ?? lv; continue; }
+      if (l === null) continue;
+      l = Math.min(X1_END, l + Math.max(lv, 0) * DT); x1f[i] = l;
+    }
+    const j0 = x1f.findIndex(v => v !== null);
+    if (j0 < 0) x1f.fill(1.0);
+    else { const w = j0 > 0 ? Math.min(0, v1[j0] ?? 0) : 0; for (let i = j0 - 1; i >= 0; i--) x1f[i] = Math.min(X1_END, x1f[i + 1] - w * DT); }
+  }
+  const s1f = sg(x1f, SMOOTH, 0), v1f = sg(x1f, SMOOTH, 1);
   // Wagen 2 darf Wagen 1 nie durchdringen: Abstand der Messpunkte mindestens D.
   // Inelastisch kleben die Wagen zusammen, Wagen 2 folgt also Wagen 1 im festen Abstand.
   const inel = run.T && run.T.key === 'inelastisch';
   for (let i = 0; i < x2f.length; i++) {
     if (x2[i] !== null || x2f[i] === null) continue;
-    const lim = (s1[i] ?? x1[i]) - D;
+    const lim = (s1f[i] ?? x1f[i]) - D;
     x2f[i] = inel && t[i] > run.tc ? lim : Math.min(x2f[i], lim);
   }
   // Startet Wagen 2 unter 0,20 m (fährt aus der Sensor-Totzone heraus), rückwärts mit der ersten gemessenen Geschwindigkeit ergänzen
@@ -148,7 +162,7 @@ async function loadRaw(run) {
   if (i0 < 0) x2f.fill(0.28);
   else { const w0 = i0 > 0 ? Math.max(0, v2[i0] ?? 0) : 0; for (let i = i0 - 1; i >= 0; i--) x2f[i] = Math.max(0.14, x2f[i + 1] - w0 * DT); }
   const s2f = sg(x2f, SMOOTH, 0), v2f = sg(x2f, SMOOTH, 1);
-  return rawCache[run.id] = { t, x1, x2, x2f, s2f, v2f, v1, v2, a1, a2, s1, s2, D, lo: t[lo], hi: t[hi], J, amax };
+  return rawCache[run.id] = { t, x1, x1f, s1f, v1f, x2, x2f, s2f, v2f, v1, v2, a1, a2, s1, s2, D, lo: t[lo], hi: t[hi], J, amax };
 }
 
 // ===================== Weg-Zeit-Skizzen (Theorie) =====================
@@ -237,11 +251,11 @@ $('sPlay').addEventListener('click', () => playSetup());
     // Sensorwert → Wagenmitte: x2 misst die Heckplatte links, bei Berührung ist x1 − x2 = D
     const off1 = raw.D - C / 2 - gap, c1of = x => x - off1, c2of = x => x + C / 2;
     const t = setupTime(), i = Math.min(raw.t.length - 1, Math.max(0, Math.round(t / DT)));
-    const x1 = raw.s1[i] ?? raw.x1[i];
+    const x1 = raw.s1f[i] ?? raw.x1f[i];
     let x2 = raw.s2f[i] ?? raw.x2f[i];
     // keine Überlappung: ungemessen mindestens Kontaktabstand, gemessen dürfen nur die Puffer gestaucht werden
     x2 = Math.min(x2, x1 - raw.D + (raw.x2[i] === null ? 0 : 2 * SIM.buf));
-    const p = { c1: c1of(x1), c2: c2of(x2), u1: raw.v1[i] ?? 0, u2: raw.v2f[i] ?? 0 };
+    const p = { c1: c1of(x1), c2: c2of(x2), u1: raw.v1f[i] ?? 0, u2: raw.v2f[i] ?? 0 };
     ctx.clearRect(0, 0, W, H);
     // Schiene, Anschläge, Massstab
     ctx.fillStyle = rail; ctx.fillRect(X(0), railY, SIM.L * sc, 7 * k);
@@ -448,35 +462,27 @@ function renderDeriv() {
   const tip = (unit, d) => ({ ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, d)} ${unit}` } });
   const common = { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
   const yAx = (title, d, extra = {}) => ({ afterFit: ax => { ax.width = 64; }, grace: '8%', grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title), ...extra });
-  const zone = { below: X2_MIN + 0.001, color: css('--rule'), text: css('--muted') };
   const pts = (label, arr, col) => ({ label, data: inWin(arr), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.6, pointHoverRadius: 3 });
   const ln = (label, arr, col) => ({ label, data: inWin(arr), borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 });
-  // Ab wann fehlt v2, weil Wagen 2 unter 0,20 m ist? (erster Übergang Wert → leer nach dem Stossbeginn)
-  // Senkrechte Linien genau dort, wo der gemessene Ort x2 unter 0,20 m fällt (mind. 0,05 s lang darunter)
-  const cutIdx = [];
-  for (let i = 1; i < raw.x2.length; i++) if (raw.x2[i] === null && raw.x2[i - 1] !== null) {
-    let k = i; while (k < raw.x2.length && raw.x2[k] === null) k++;
-    if (k - i >= 10) cutIdx.push(i);
-  }
-  // ebenso dort, wo Wagen 2 von unter 0,20 m kommend erstmals gemessen wird (z. B. Wagen fahren aufeinander zu)
-  for (let i = 1; i < raw.x2.length; i++) if (raw.x2[i] !== null && raw.x2[i - 1] === null) {
-    let k = i - 1; while (k >= 0 && raw.x2[k] === null) k--;
-    if (i - 1 - k >= 10) cutIdx.push(i);
-  }
-  cutIdx.sort((p, q) => p - q);
-  const cutTs = cutIdx.map(i => raw.t[i]);
-  const iX = cutIdx.length ? cutIdx[0] : -1, tCut = iX > 0 ? raw.t[iX] : NaN;
-  const ext = [];   // keine Fortsetzung von v₂ nach der 0,20-m-Grenze (auf Wunsch entfernt)
-  const cut = { ts: cutTs, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
-  $('cutNote').hidden = !(iX > 0);
-  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 die Grenze von 0,20 m kreuzt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die 0,07 s direkt an der Linie sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer.</span>`;
+  // Zeitabschnitte, in denen ein Wagen in der Totzone seines Sensors ist (mind. 0,05 s); nur als Text über den Diagrammen
+  const gaps = arr => { const g = []; let i = 0;
+    while (i < arr.length) { if (arr[i] !== null) { i++; continue; } let k = i; while (k < arr.length && arr[k] === null) k++;
+      if (k - i >= 10) { const prev = g[g.length - 1]; if (prev && i - prev[1] < 60) prev[1] = k - 1; else g.push([i, k - 1]); } i = k; }
+    return g.map(([p, q]) => `${fmt(raw.t[p], 2)} bis ${fmt(raw.t[q], 2)} s`); };
+  const g1 = gaps(raw.x1), g2 = gaps(raw.x2);
+  const ext = [];
+  const parts = [];
+  if (g2.length) parts.push(`Wagen 2 von ${g2.join(' und von ')}`);
+  if (g1.length) parts.push(`Wagen 1 von ${g1.join(' und von ')}`);
+  $('cutNote').hidden = !parts.length;
+  if (parts.length) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Ist ein Wagen näher als etwa 20 cm an seinem Sensor, misst dieser nicht (Wagen 2: x unter 0,20 m, Wagen 1: x über 1,02 m). In dieser Messung fehlen deshalb ${parts.join(', ')}. Dort enden die Kurven. Die Werte direkt am Rand einer Lücke (0,07 s) sind mit einem einseitigen Glättungsfenster berechnet und etwas unsicherer.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3) }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), cut }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3) }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), cut }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2) }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
   // Kraftstoss je Wagen: m · Fläche unter a(t) im Stoss gegen Δp = m·Δv aus den Fits
   const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
   const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
@@ -506,7 +512,7 @@ async function selectModelRun(id) {
 function simulate(run, raw, k, m1, m2, c = 0) {
   const t0 = Math.max(0, run.tc - 0.5), t1 = raw.t[raw.t.length - 1], i0 = Math.round(t0 / DT);
   const avg = (arr, i) => { let s = 0, n = 0; for (let j = i - 4; j <= i + 4; j++) if (arr[j] !== null && arr[j] !== undefined) { s += arr[j]; n++; } return s / n; };
-  let x1 = avg(raw.x1, i0), x2 = avg(raw.x2, i0), v1 = run.v1, v2 = run.v2;
+  let x1 = avg(raw.x1f, i0), x2 = avg(raw.x2, i0), v1 = run.v1, v2 = run.v2;
   if (!ok(x2)) x2 = raw.x2f[i0];
   const h = 1e-4, every = Math.round(DT / h), out = [];
   for (let s = 0, t = t0; t <= t1; s++, t += h) {
@@ -537,7 +543,7 @@ function renderModel() {
       { label: 'Wagen 1 Modell', type: 'line', data: onRail(out, 'x1'), borderColor: c1, borderWidth: 2, pointRadius: 0 },
       { label: 'Wagen 2 Modell', type: 'line', data: onRail(out, 'x2'), borderColor: c2, borderWidth: 2, pointRadius: 0 }] },
     options: { maintainAspectRatio: false, animation: false, parsing: false,
-      plugins: { legend: { display: false }, zone: { below: X2_MIN + 0.001, color: css('--rule'), text: css('--muted') }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y)} m` } } },
+      plugins: { legend: { display: false }, tooltip: { ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y)} m` } } },
       scales: { x: xs, y: { min: 0, max: 1.2, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, border: { display: false }, title: o.axisTitle('x in m') } } } });
   legend('lgME', [[shapeSVG.line(c1), 'Wagen 1'], [shapeSVG.line(c2), 'Wagen 2'], [shapeSVG.line(ink, true), 'Summe E_kin'], [shapeSVG.line(muted, true), 'E_kin + Federenergie (lang gestrichelt)']]);
   const ds = (label, f, color, extra = {}) => ({ label, data: out.map(p => ({ x: p.t, y: f(p) * 1000 })), borderColor: color, borderWidth: 2, pointRadius: 0, ...extra });
