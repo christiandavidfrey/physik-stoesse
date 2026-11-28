@@ -690,7 +690,7 @@ async function renderTables() {
   const runs = RUNS.slice().sort((p, q) => +p.id - +q.id);
   const raws = {}; for (const r of runs) raws[r.id] = await loadRaw(r);
   const f = (x, d = 3) => ok(x) ? fmt(x, d) : '–', pc = x => ok(x) ? `${x > 0 ? '+' : ''}${fmt(x, 0)} %` : '–';
-  const U = (r, key, v) => r.uns.includes(key) ? `<span class="uns">${f(v)}*</span>` : f(v);
+  const U = (r, key, v) => f(v);
   const tbl = (id, title, cap, head, rows, note = '', cls = '') => { const [nm, ...rest] = title.split(': '); return `<details class="tacc" id="${id}"><summary><span class="tnum">${nm}</span><span class="tttl">${rest.join(': ')}</span></summary><p class="tcap">${cap}</p><div class="tablewrap"><table class="${cls}"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${note ? `<p class="tnote">${note}</p>` : ''}</details>`; };
   const base = r => [r.id, r.T.label, r.aufbau];
   const gaps = (arr, t) => { const g = []; let i = 0;
@@ -700,8 +700,7 @@ async function renderTables() {
   const H = [];
   H.push(tbl('tA', 'Tabelle A: Massen und Geschwindigkeiten', 'Lineare Fits vor (v) und nach (u) dem Stoss, in m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'm₁ / g', 'm₂ / g', 'v₁', 'v₂', 'u₁', 'u₂'],
-    runs.map(r => [...base(r), f(r.m1 * 1000, 1), f(r.m2 * 1000, 1), U(r, 'v1', r.v1), U(r, 'v2', r.v2), U(r, 'v1_nach', r.u1), U(r, 'v2_nach', r.u2)]),
-    '* unsicher: Wagen 2 nach dem Stoss nur kurz messbar.'));
+    runs.map(r => [...base(r), f(r.m1 * 1000, 1), f(r.m2 * 1000, 1), U(r, 'v1', r.v1), U(r, 'v2', r.v2), U(r, 'v1_nach', r.u1), U(r, 'v2_nach', r.u2)])));
   H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls in g·m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'p vor', 'p nach', 'Δp', 'relativ'],
     runs.map(r => [...base(r), f(r.p0 * 1000, 1), f(r.p1 * 1000, 1), f((r.p1 - r.p0) * 1000, 1), Math.abs(r.p0) > 0.03 ? pc((r.p1 - r.p0) / Math.abs(r.p0) * 100) : '(p ≈ 0)'])));
