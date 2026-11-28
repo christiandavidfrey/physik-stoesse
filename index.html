@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}</script>
 <style>
 :root{
   --paper:#F3F3F3; --raised:#FFFFFF; --ink:#111111; --ink-2:#444444; --muted:#6E6E6E;
@@ -186,6 +187,11 @@ html{scroll-padding-top:90px}
 .dhead-t b{font-size:20px}
 .dhead-t span{font-size:14px;color:var(--ink-2)}
 .dhead-nav{display:flex;gap:6px}
+.masthead{position:relative}
+.themetog{position:absolute;top:20px;right:24px;color:#F0F0F0;border-color:#444}
+.themetog:hover{border-color:#999}
+.dhead .themetog{position:static;color:var(--ink);border-color:var(--rule)}
+@media (max-width:640px){.dhead .themetog{display:none}}
 .simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
 body.no-sim #modell,body.no-sim .sim-only{display:none!important}
 @media (max-width:640px){.dhead-in{padding:10px 16px;flex-wrap:wrap}.dhead-t{order:3;flex-basis:100%}.dhead-nav{margin-left:auto}}
@@ -212,7 +218,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 </head>
 <body>
 
-<header class="masthead dark"><div class="col">
+<header class="masthead dark"><button class="btn themetog" type="button" aria-label="Hell oder dunkel umschalten"></button><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
   <p class="deck">Zusatz zum Bericht: alle 12 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
@@ -244,20 +250,6 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 </section>
 
 
-<section id="ueberblick">
-  <div class="col">
-    <h2>Überblick</h2>
-    <p class="lede">Alle Messungen auf einen Blick: Liegen die Massenverhältnisse aus der Impulserhaltung auf den gewogenen Verhältnissen 1,86 (541 g : 291 g), 1 und 0,54?</p>
-  </div>
-  <figure class="mid">
-    <div class="legend" id="lgTypes"></div>
-    <div class="box" style="height:380px"><canvas id="chM" role="img" aria-label="Massenverhältnis je Messung"></canvas></div>
-  </figure>
-  <div id="pFigure">
-    <div class="col" style="margin-top:120px"><h3>Impuls vor und nach dem Stoss</h3><p class="lede" id="pSub"></p></div>
-    <figure class="mid"><div class="box" style="height:340px"><canvas id="chP" role="img" aria-label="Impuls vorher gegen nachher"></canvas></div></figure>
-  </div>
-</section>
 </div>
 
 <div id="viewDetail" hidden>
@@ -265,6 +257,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   <div class="dhead-in">
     <button class="btn" id="backBtn">← Alle Stösse</button>
     <div class="dhead-t"><b id="dhTitle"></b><span id="dhInfo"></span></div>
+    <button class="btn themetog" type="button" aria-label="Hell oder dunkel umschalten"></button>
     <button class="btn simtog" id="simBtn" aria-pressed="true" title="Federmodell in der Wiedergabe und im Abschnitt Federmodell ein- oder ausblenden">Simulation: ein</button>
     <div class="dhead-nav"><button class="btn" id="prevBtn" aria-label="Vorheriger Stoss"></button><button class="btn" id="nextBtn" aria-label="Nächster Stoss"></button></div>
   </div>

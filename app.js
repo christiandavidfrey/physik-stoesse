@@ -378,39 +378,8 @@ function renderTable() {
 }
 
 function renderOverviewCharts() {
-  const o = baseOpts(), surface = css('--raised'), muted = css('--muted');
-  const present = TYPES.filter(T => RUNS.some(r => r.T === T));
-  legend('lgTypes', present.map(T => [shapeSVG[T.shape](css(T.color)), `${T.label} (${T.puffer})`]));
-  const order = [...RUNS].sort((a, b) => TYPES.indexOf(a.T) - TYPES.indexOf(b.T) || AUFBAU.indexOf(a.aufbau) - AUFBAU.indexOf(b.aufbau));
-  const labels = order.map(r => 'Nr. ' + r.id);
-  const title = i => { const r = order[i]; return `Messung ${r.id}, ${r.T.label.toLowerCase()}`; };
-
-  chart('chM', { type: 'line',
-    data: { labels, datasets: [
-      ...[541 / 291, 1, 291 / 541].map(v => ({ data: labels.map(() => v), borderColor: muted, borderDash: [5, 5], borderWidth: 1, pointRadius: 0, pointHitRadius: 0, order: 3 })),
-      ...present.map(T => ({ label: T.label, data: order.map(r => r.T === T ? r.ratio : null), showLine: false, pointStyle: T.shape, backgroundColor: css(T.color), borderColor: surface, borderWidth: 2, pointRadius: 8, pointHoverRadius: 10, pointHitRadius: 12 })),
-    ] },
-    options: { maintainAspectRatio: false, animation: o.anim,
-      plugins: { legend: { display: false }, tooltip: { ...o.tooltip, filter: i => i.datasetIndex > 2 && i.raw !== null, callbacks: { title: i => title(i[0].dataIndex), label: i => [`m₂/m₁ = ${fmt(i.raw, 2)}`, `erwartet ${fmt(EXPECTED_RATIO[order[i.dataIndex].aufbau], 1)} (${order[i.dataIndex].aufbau})`] } } },
-      scales: { x: { grid: { display: false }, ticks: { ...o.ticks, autoSkip: false, maxRotation: 0, font: { size: 12 } }, border: { color: css('--rule') } },
-        y: { type: 'logarithmic', min: 0.25, max: 4, grid: o.grid, border: { display: false }, title: o.axisTitle('m₂ / m₁'),
-          afterBuildTicks: ax => { ax.ticks = [0.25, 0.5, 1, 2, 4].map(v => ({ value: v })); }, ticks: { ...o.ticks, callback: v => ({ 0.25: '¼', 0.5: '½', 1: '1', 2: '2', 4: '4' })[v] ?? '' } } } } });
-
-  const withMass = RUNS.filter(r => r.hasMass);
-  $('pFigure').style.display = withMass.length ? '' : 'none'; $('massFact').style.display = RUNS.every(r => r.hasMass) && !RUNS.some(r => r.ph) ? 'none' : '';
+  $('massFact').style.display = RUNS.every(r => r.hasMass) && !RUNS.some(r => r.ph) ? 'none' : '';
   if (RUNS.some(r => r.ph)) $('massFact').innerHTML = 'Massen <b>vorläufig</b>';
-  $('pSub').textContent = withMass.length ? 'Gestrichelt: perfekte Impulserhaltung p′ = p.' + (withMass.some(r => r.ph) ? ' Mit vorläufigen Massen (100\u00a0g / 200\u00a0g), also nur zur Orientierung.' : '') : 'Erscheint, sobald die Massen in data/messungen.csv eingetragen sind.';
-  if (withMass.length) {
-    const lim = Math.max(...withMass.flatMap(r => [Math.abs(r.p0), Math.abs(r.p1)])) * 1.15;
-    chart('chP', { type: 'scatter',
-      data: { datasets: [
-        { data: [{ x: -lim, y: -lim }, { x: lim, y: lim }], type: 'line', borderColor: muted, borderDash: [5, 5], borderWidth: 1, pointRadius: 0, pointHitRadius: 0 },
-        ...present.map(T => ({ data: withMass.filter(r => r.T === T).map(r => ({ x: r.p0, y: r.p1, r })), pointStyle: T.shape, backgroundColor: css(T.color), borderColor: surface, borderWidth: 2, pointRadius: 8, pointHoverRadius: 10 })),
-      ] },
-      options: { maintainAspectRatio: false, animation: o.anim,
-        plugins: { legend: { display: false }, tooltip: { ...o.tooltip, filter: i => !!i.raw.r, callbacks: { title: i => `Messung ${i[0].raw.r.id}`, label: i => [`p = ${fmt(i.raw.x)} kg·m/s`, `p′ = ${fmt(i.raw.y)} kg·m/s`] } } },
-        scales: { x: { min: -lim, max: lim, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, title: o.axisTitle('p vorher in kg·m/s') }, y: { min: -lim, max: lim, grid: o.grid, ticks: { ...o.ticks, callback: deNum(2) }, title: o.axisTitle('p nachher in kg·m/s') } } } });
-  }
 }
 
 // ===================== Von x(t) zu v(t) und a(t): beide Wagen =====================
@@ -568,4 +537,17 @@ fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error
     console.error(err);
     $('massNote').innerHTML = '<b>Daten nicht geladen</b><span>Die Messdaten konnten nicht gelesen werden. Wird die Seite direkt vom Rechner geöffnet, bitte einen kleinen Webserver starten (siehe README).</span>';
   });
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => RUNS.length && renderAll());
+// ===================== Hell/Dunkel-Schalter =====================
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => (document.documentElement.dataset.theme || (darkMQ.matches ? 'dark' : 'light')) === 'dark';
+function updateThemeButtons() {
+  document.querySelectorAll('.themetog').forEach(b => { b.textContent = isDark() ? '☀ Hell' : '☾ Dunkel'; });
+}
+document.querySelectorAll('.themetog').forEach(b => b.addEventListener('click', () => {
+  const t = isDark() ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('theme', t); } catch (e) {}
+  updateThemeButtons(); if (RUNS.length) renderAll();
+}));
+updateThemeButtons();
+darkMQ.addEventListener('change', () => { updateThemeButtons(); if (RUNS.length) renderAll(); });
