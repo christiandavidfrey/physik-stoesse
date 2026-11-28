@@ -719,7 +719,8 @@ async function renderTables() {
     runs.map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
       if (r.T.key === 'elastisch') { t1 = (P - r.m2 * (r.v1 - r.v2)) / M; t2 = (P + r.m1 * (r.v1 - r.v2)) / M; } else if (r.T.key === 'inelastisch') t1 = t2 = P / M;
       const k = (r.u2 - r.u1) / (r.v1 - r.v2);
-      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2), fmt(Math.abs(k) < 0.005 ? 0 : k, 2)]; })));
+      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2), fmt(Math.abs(k) < 0.005 ? 0 : k, 2)]; }),
+    'Inelastisch sind die gemessenen Geschwindigkeiten betragsmässig immer etwas kleiner als v_s (negative Werte, also „höher“). Das ist Reibung: Die Fits geben die Geschwindigkeit etwa 0,2 s nach dem Kontakt an, in dieser Zeit bremst die Rollreibung (rund 0,05 m/s²) die gekoppelten Wagen um etwa 0,01 m/s.'));
   H.push(tbl('tF', 'Tabelle F: Totzone der Sensoren', 'Zeitabschnitte, in denen ein Wagen näher als etwa 20 cm an seinem Sensor war (Sensor 2 zeigt dann fest 0,196 m, Sensor 1 fest 1,023 m). Diese Werte sind verworfen.',
     ['Nr.', 'Stossart', 'Aufbau', 'Wagen 2 nicht messbar', 'Wagen 1 nicht messbar'],
     runs.map(r => { const raw = raws[r.id]; return [...base(r), gaps(raw.x2, raw.t), gaps(raw.x1, raw.t)]; })));
