@@ -136,6 +136,19 @@ async function loadRaw(run) {
     if (last === null) continue;
     last = Math.max(0.14, last + (ok(run.u2) ? Math.min(lastV, 0) || run.u2 : lastV) * DT); x2f[i] = last;
   }
+  // Lücke mitten in der Messung (Wagen fährt aus der Totzone wieder heraus, z. B. nach Abprallen am Schienenende):
+  // vom Wiedereintritt rückwärts mit der dortigen Geschwindigkeit ergänzen, damit der Wagen nicht springt
+  const backfill = (xs, xf, vs, sign, end) => {
+    for (let k = 1; k < xs.length; k++) {
+      if (xs[k] === null || xs[k - 1] !== null || xf[k - 1] === null) continue;
+      const w = sign * Math.max(0, sign * (vs[k] ?? 0)); let b = xs[k];
+      for (let j = k - 1; j >= 0 && xs[j] === null; j--) {
+        b = sign > 0 ? Math.max(end, b - w * DT) : Math.min(end, b - w * DT);
+        xf[j] = sign > 0 ? Math.max(xf[j], b) : Math.min(xf[j], b);
+      }
+    }
+  };
+  backfill(x2, x2f, v2, 1, 0.14);
   // x1 ebenso lückenlos: in der Totzone von Sensor 1 mit der letzten bzw. ersten gemessenen Geschwindigkeit
   const X1_END = 1.08, x1f = x1.slice();
   { let l = null, lv = 0;
@@ -144,6 +157,7 @@ async function loadRaw(run) {
       if (l === null) continue;
       l = Math.min(X1_END, l + Math.max(lv, 0) * DT); x1f[i] = l;
     }
+    backfill(x1, x1f, v1, -1, X1_END);
     const j0 = x1f.findIndex(v => v !== null);
     if (j0 < 0) x1f.fill(1.0);
     else { const w = j0 > 0 ? Math.min(0, v1[j0] ?? 0) : 0; for (let i = j0 - 1; i >= 0; i--) x1f[i] = Math.min(X1_END, x1f[i + 1] - w * DT); }

@@ -1,13 +1,13 @@
 versuch,typ,aufbau,m1,m2,v1,v2,v1_nach,v2_nach,t_stoss,bemerkung,m_quelle
 1,elastisch,leicht→schwer,0.2919,0.5414,-0.388,-0.000,0.102,-0.242,1.08,ruhender Wagen schwer und stossender leicht,gewogen
-2,elastisch,schwer→leicht,0.5414,0.2919,-0.201,0.011,-0.058,-0.259,1.80,ruhender Wagen leicht und stossender schwer,gewogen
+2,elastisch,schwer→leicht,0.5414,0.2919,-0.211,0.003,-0.058,-0.259,1.74,ruhender Wagen leicht und stossender schwer,gewogen
 3,elastisch,gleich (einer ruht),0.2919,0.2919,-0.409,-0.001,0.006,-0.365,1.34,ein Wagen ruht (vermutl. gleiche Massen),gewogen
 4,elastisch,gleich (gegeneinander),0.2919,0.2919,-0.271,0.301,0.248,-0.253,1.18,gleich schwer und fahren aufeinander zu,gewogen
 5,inelastisch,leicht→schwer,0.2919,0.5414,-0.403,-0.015,-0.138,-0.136,1.64,ruhender Wagen schwer und stossender leicht,gewogen
-6,inelastisch,schwer→leicht,0.5414,0.2919,-0.242,0.003,-0.149,-0.144,2.15,ruhender Wagen leicht und stossender schwer,gewogen
+6,inelastisch,schwer→leicht,0.5414,0.2919,-0.242,0.003,-0.149,-0.144,2.19,ruhender Wagen leicht und stossender schwer,gewogen
 7,inelastisch,gleich (einer ruht),0.2919,0.2919,-0.311,-0.003,-0.148,-0.150,1.78,ein Wagen ruht (vermutl. gleiche Massen),gewogen
 8,inelastisch,gleich (gegeneinander),0.2919,0.2919,-0.355,0.337,-0.010,-0.010,1.20,gleich schwer und fahren aufeinander zu,gewogen
 9,teilelastisch,leicht→schwer,0.2919,0.5414,-0.328,0.003,0.005,-0.167,1.93,ruhender Wagen schwer und stossender leicht,gewogen
-10,teilelastisch,schwer→leicht,0.5414,0.2919,-0.204,-0.009,-0.080,-0.210,2.32,ruhender Wagen leicht und stossender schwer,gewogen
+10,teilelastisch,schwer→leicht,0.5414,0.2919,-0.217,-0.004,-0.080,-0.210,2.26,ruhender Wagen leicht und stossender schwer,gewogen
 11,teilelastisch,gleich (einer ruht),0.2919,0.2919,-0.297,-0.002,-0.052,-0.222,1.70,ein Wagen ruht (vermutl. gleiche Massen),gewogen
 12,teilelastisch,gleich (gegeneinander),0.2919,0.2919,-0.340,0.366,0.186,-0.177,1.28,gleich schwer und fahren aufeinander zu,gewogen
