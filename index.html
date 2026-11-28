@@ -252,6 +252,16 @@ html.in-detail{scroll-padding-top:130px}
 .tables .tnote{font-size:13px;color:var(--muted);margin:10px 0 0}
 #viewTables > section{padding-top:90px}
 #tabellen h2::before{content:none}
+.tacc{border-top:1px solid var(--rule)}
+.tacc:last-child{border-bottom:1px solid var(--rule)}
+.tacc summary{cursor:pointer;list-style:none;display:flex;gap:14px;align-items:baseline;padding:18px 4px;color:var(--ink)}
+.tacc summary::-webkit-details-marker{display:none}
+.tacc summary::after{content:"+";margin-left:auto;font-size:22px;line-height:1;color:var(--accent);transition:transform .2s}
+.tacc[open] summary::after{transform:rotate(45deg)}
+.tacc summary:hover .tttl{color:var(--accent)}
+.tnum{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:76px}
+.tttl{font-size:18px;font-weight:700}
+.tacc[open]{padding-bottom:28px}
 </style>
 </head>
 <body>
@@ -321,7 +331,7 @@ html.in-detail{scroll-padding-top:130px}
       <thead><tr>
         <th>Nr.</th><th>Aufbau</th>
         <th>v₁<small>m/s</small></th><th>v₂<small>m/s</small></th><th>v₁′<small>m/s</small></th><th>v₂′<small>m/s</small></th>
-        <th class="calc">e<small>&nbsp;</small></th><th class="calc">m₂/m₁<small>aus Δv</small></th>
+        <th class="calc">m₂/m₁<small>aus Δv</small></th>
         <th>m₁<small>kg</small></th><th>m₂<small>kg</small></th>
         <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th><th class="calc">ΔE<small>%</small></th>
       </tr></thead><tbody></tbody>
@@ -344,7 +354,7 @@ html.in-detail{scroll-padding-top:130px}
 <section id="aufbau" class="tint">
   <div class="col">
     <h2>Der Stoss</h2>
-    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt umrandet läuft die Simulation mit denselben Startwerten mit: beim elastischen Stoss eine ideale Feder wie in unserem Berkeley-Madonna-Modell, beim teilelastischen eine Feder mit Dämpfung passend zur gemessenen Stosszahl und beim inelastischen eine Feder bis zur grössten Stauchung, danach kleben die Wagen zusammen. Die Federhärte folgt aus der gemessenen Stossdauer.</span> Mit dem Schalter „Simulation“ unter der Wiedergabe lässt sich das Modell ein- und ausblenden.</p>
+    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt umrandet läuft die Simulation mit denselben Startwerten mit: beim elastischen Stoss eine ideale Feder wie in unserem Berkeley-Madonna-Modell, beim teilelastischen eine Feder mit Dämpfung, so eingestellt, dass der gemessene Energieverlust herauskommt und beim inelastischen eine Feder bis zur grössten Stauchung, danach kleben die Wagen zusammen. Die Federhärte folgt aus der gemessenen Stossdauer.</span> Mit dem Schalter „Simulation“ unter der Wiedergabe lässt sich das Modell ein- und ausblenden.</p>
     <details class="more">
       <summary>Versuchsaufbau</summary>
       <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Die x-Achse läuft von Sensor 2 (x = 0) zu Sensor 1 (x ≈ 1,22 m). Wagen 1 startet auf der Seite von Sensor 1 und fährt in −x, also nach links; Wagen 2 steht auf der Seite von Sensor 2. Je nach Messung ruht Wagen 2, oder er fährt in +x auf Wagen 1 zu und beide bewegen sich aufeinander zu (Messungen 4, 8 und 12). Negative Geschwindigkeiten bedeuten Bewegung nach links.</p>

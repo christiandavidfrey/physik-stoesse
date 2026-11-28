@@ -440,10 +440,10 @@ function renderTable() {
   const U = (r, key, v) => r.uns.includes(key) ? `<span class="uns" title="unsicher: Wagen 2 nach dem Stoss nur kurz messbar">${fmt(v)}*</span>` : fmt(v);
   $('table').querySelector('tbody').innerHTML = TYPES.map(T => {
     const rs = ORDER.filter(r => r.T === T); if (!rs.length) return '';
-    return `<tr class="grp"><th colspan="13"><span class="swatch" style="background:var(${T.color})"></span>${T.label}<small>beide Wagen mit ${T.puffer}, ${rs.length} Messungen</small></th></tr>` + rs.map(r => `<tr data-run="${r.id}" tabindex="0" title="Stoss ${r.id} öffnen">
+    return `<tr class="grp"><th colspan="12"><span class="swatch" style="background:var(${T.color})"></span>${T.label}<small>beide Wagen mit ${T.puffer}, ${rs.length} Messungen</small></th></tr>` + rs.map(r => `<tr data-run="${r.id}" tabindex="0" title="Stoss ${r.id} öffnen">
     <td>${r.id}</td><td>${r.aufbau}</td>
     <td>${U(r, 'v1', r.v1)}</td><td>${U(r, 'v2', r.v2)}</td><td>${U(r, 'v1_nach', r.u1)}</td><td>${U(r, 'v2_nach', r.u2)}</td>
-    <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
+    <td class="calc">${fmt(r.ratio, 2)}</td>
     <td>${ok(r.m1) ? (r.ph ? `<span class="ph">${fmt(r.m1, 4)}*</span>` : fmt(r.m1, 4)) : missing}</td><td>${ok(r.m2) ? (r.ph ? `<span class="ph">${fmt(r.m2, 4)}*</span>` : fmt(r.m2, 4)) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
   }).join('');
@@ -691,7 +691,7 @@ async function renderTables() {
   const raws = {}; for (const r of runs) raws[r.id] = await loadRaw(r);
   const f = (x, d = 3) => ok(x) ? fmt(x, d) : '–', pc = x => ok(x) ? `${x > 0 ? '+' : ''}${fmt(x, 0)} %` : '–';
   const U = (r, key, v) => r.uns.includes(key) ? `<span class="uns">${f(v)}*</span>` : f(v);
-  const tbl = (id, title, cap, head, rows, note = '', cls = '') => `<div class="tblock" id="${id}"><h3>${title}</h3><p class="tcap">${cap}</p><div class="tablewrap"><table class="${cls}"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${note ? `<p class="tnote">${note}</p>` : ''}</div>`;
+  const tbl = (id, title, cap, head, rows, note = '', cls = '') => { const [nm, ...rest] = title.split(': '); return `<details class="tacc" id="${id}"><summary><span class="tnum">${nm}</span><span class="tttl">${rest.join(': ')}</span></summary><p class="tcap">${cap}</p><div class="tablewrap"><table class="${cls}"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${note ? `<p class="tnote">${note}</p>` : ''}</details>`; };
   const base = r => [r.id, r.T.label, r.aufbau];
   const gaps = (arr, t) => { const g = []; let i = 0;
     while (i < arr.length) { if (arr[i] !== null) { i++; continue; } let k = i; while (k < arr.length && arr[k] === null) k++;
@@ -714,12 +714,11 @@ async function renderTables() {
       const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
       const J1 = r.m1 * area(raw.a1), J2 = r.m2 * area(raw.a2), d1 = r.m1 * (r.u1 - r.v1), d2 = r.m2 * (r.u2 - r.v2), dt = raw.hi - raw.lo;
       return [...base(r), f(J1), f(d1), pc((J1 - d1) / Math.abs(d1) * 100), f(J2), f(d2), f(dt, 2), f(Math.abs(d1) / dt, 2), f(Math.abs(r.m1 * raw.amax), 2)]; })));
-  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Elastisch: u aus Impuls- und Energieerhaltung. Inelastisch: gemeinsame Geschwindigkeit v_s = (m₁v₁ + m₂v₂)/(m₁ + m₂). Stosszahl k = (u₂ − u₁)/(v₁ − v₂).',
-    ['Nr.', 'Stossart', 'Aufbau', 'u₁ gemessen', 'u₁ Theorie', 'u₂ gemessen', 'u₂ Theorie', 'Stosszahl k'],
+  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Elastisch: u aus Impuls- und Energieerhaltung. Inelastisch: gemeinsame Geschwindigkeit v_s = (m₁v₁ + m₂v₂)/(m₁ + m₂). Teilelastisch gibt es keine eindeutige Vorhersage.',
+    ['Nr.', 'Stossart', 'Aufbau', 'u₁ gemessen', 'u₁ Theorie', 'u₂ gemessen', 'u₂ Theorie'],
     runs.map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
       if (r.T.key === 'elastisch') { t1 = (P - r.m2 * (r.v1 - r.v2)) / M; t2 = (P + r.m1 * (r.v1 - r.v2)) / M; } else if (r.T.key === 'inelastisch') t1 = t2 = P / M;
-      const k = (r.u2 - r.u1) / (r.v1 - r.v2);
-      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2), fmt(Math.abs(k) < 0.005 ? 0 : k, 2)]; }),
+      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2)]; }),
     'Inelastisch sind die gemessenen Geschwindigkeiten betragsmässig immer etwas kleiner als v_s (negative Werte, also „höher“). Das ist Reibung: Die Fits geben die Geschwindigkeit etwa 0,2 s nach dem Kontakt an, in dieser Zeit bremst die Rollreibung (rund 0,05 m/s²) die gekoppelten Wagen um etwa 0,01 m/s.'));
   H.push(tbl('tF', 'Tabelle F: Totzone der Sensoren', 'Zeitabschnitte, in denen ein Wagen näher als etwa 20 cm an seinem Sensor war (Sensor 2 zeigt dann fest 0,196 m, Sensor 1 fest 1,023 m). Diese Werte sind verworfen.',
     ['Nr.', 'Stossart', 'Aufbau', 'Wagen 2 nicht messbar', 'Wagen 1 nicht messbar'],
