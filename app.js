@@ -78,18 +78,31 @@ function parseRuns(text) {
 }
 
 // ===================== Rohdaten & Ableitungen =====================
-// Savitzky-Golay (quadratische Anpassung im symmetrischen Fenster)
+// Savitzky-Golay: quadratische Anpassung in einem Fenster von w Punkten. Im Innern symmetrisch;
+// am Rand eines Messabschnitts (Datenbeginn/-ende, Lücke unter 0,20 m) wird das Fenster in den Abschnitt
+// hineingeschoben und die Parabel am Randpunkt ausgewertet, damit v und a bis zum letzten Messpunkt reichen.
 function sg(y, w, deriv) {
   const h = (w - 1) / 2, out = new Array(y.length).fill(null);
-  const ks = []; for (let k = -h; k <= h; k++) ks.push(k);
-  let c;
-  if (deriv === 0) { const den = (2 * h - 1) * (2 * h + 1) * (2 * h + 3); c = ks.map(k => (3 * (3 * h * h + 3 * h - 1) - 15 * k * k) / den); }
-  else if (deriv === 1) { const S = ks.reduce((s, k) => s + k * k, 0); c = ks.map(k => k / S / DT); }
-  else { const m = h * (h + 1) / 3, S = ks.reduce((s, k) => s + (k * k - m) ** 2, 0); c = ks.map(k => 2 * (k * k - m) / S / DT ** 2); }
-  for (let i = h; i < y.length - h; i++) {
-    let s = 0, bad = false;
-    for (let j = 0; j < w; j++) { const v = y[i - h + j]; if (v === null) { bad = true; break; } s += c[j] * v; }
-    if (!bad) out[i] = s;
+  let s = 0;
+  while (s < y.length) {
+    while (s < y.length && y[s] === null) s++;
+    let e = s; while (e + 1 < y.length && y[e + 1] !== null) e++;
+    const len = e - s + 1;
+    if (s < y.length && len >= 9) {
+      const ww = Math.min(w, len);
+      for (let i = s; i <= e; i++) {
+        const j0 = Math.max(s, Math.min(i - Math.floor(ww / 2), e - ww + 1));
+        // Normalgleichungen für y ≈ c0 + c1·k + c2·k², k = j − i
+        let S0 = 0, S1 = 0, S2 = 0, S3 = 0, S4 = 0, T0 = 0, T1 = 0, T2 = 0;
+        for (let j = j0; j < j0 + ww; j++) { const k = j - i, k2 = k * k, v = y[j]; S0++; S1 += k; S2 += k2; S3 += k2 * k; S4 += k2 * k2; T0 += v; T1 += k * v; T2 += k2 * v; }
+        const M = [[S0, S1, S2], [S1, S2, S3], [S2, S3, S4]], R = [T0, T1, T2];
+        const det = m => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+        const D = det(M); if (!D) continue;
+        const col = c => det(M.map((r, ri) => r.map((x, ci) => ci === c ? R[ri] : x))) / D;
+        out[i] = deriv === 0 ? col(0) : deriv === 1 ? col(1) / DT : 2 * col(2) / DT ** 2;
+      }
+    }
+    s = e + 1;
   }
   return out;
 }
@@ -449,7 +462,7 @@ function renderDeriv() {
   const cut = { ts: cutTs, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
   const cutLbl = ['Wagen 2 < 20 cm: nicht gemessen'];
   $('cutNote').hidden = !(iX > 0);
-  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) enden etwas früher, weil sie über 0,15 s geglättet werden und dafür Messpunkte auf beiden Seiten brauchen. In v(t) ist danach v₂′ aus dem Fit gestrichelt angenommen.</span>`;
+  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die letzten 0,07 s davor sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer. In v(t) ist danach v₂′ aus dem Fit gestrichelt angenommen.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
