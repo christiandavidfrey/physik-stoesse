@@ -495,7 +495,7 @@ function renderDeriv() {
   if (parts.length) $('cutNote').innerHTML = `<span>Näher als 20 cm am Sensor wird nicht gemessen. Hier fehlen ${parts.join(', ')}.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3) }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
-  legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (Seite Sensor 1)'], [shapeSVG.line(c2), 'Wagen 2 (Seite Sensor 2)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
+  legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (Seite Sensor 1)'], [shapeSVG.line(c2), 'Wagen 2 (Seite Sensor 2)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen u₂ aus Fit']] : []));
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3) }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
@@ -585,7 +585,7 @@ function renderModel() {
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2'), ink = css('--ink-2'), muted = css('--muted');
   const sim = simulate(run, raw, k, m1, m2, c, prm.mode), { out, t0, t1 } = sim;
   if (ani.run === run) { ani.model = sim; fillSetupFigures(); }
-  $('modelE').innerHTML = `Stosszahl gemessen <b>${fmt(Math.max(run.e, 0), 2)}</b>, im Modell <b>${fmt(sim.e, 2)}</b>. Endgeschwindigkeiten im Modell: v₁′ = ${fmt(sim.u1, 2)} m/s, v₂′ = ${fmt(sim.u2, 2)} m/s (gemessen ${fmt(run.u1, 2)} und ${fmt(run.u2, 2)} m/s).`;
+  $('modelE').innerHTML = `Stosszahl gemessen <b>${fmt(Math.max(run.e, 0), 2)}</b>, im Modell <b>${fmt(sim.e, 2)}</b>. Endgeschwindigkeiten im Modell: u₁ = ${fmt(sim.u1, 2)} m/s, u₂ = ${fmt(sim.u2, 2)} m/s (gemessen ${fmt(run.u1, 2)} und ${fmt(run.u2, 2)} m/s).`;
   const meas = arr => arr.map((y, i) => (y === null || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
   const xs = { type: 'linear', min: 0, max: raw.t[raw.t.length - 1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.5, callback: deNum(1) }, title: o.axisTitle('t in s') };
   // Modell kennt keine Schienenenden: Linie endet, wo der Wagen die Schiene (0 bis 1,2 m) verlässt
