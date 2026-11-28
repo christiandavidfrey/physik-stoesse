@@ -232,9 +232,24 @@ details.more .types-legend{margin:8px 0 22px}
 @media (prefers-reduced-motion: reduce){details.more summary::after{transition:none}}
 footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 .foot-in{max-width:1280px;margin:0 auto;padding:0 24px}
+.topbar{position:sticky;top:0;z-index:40;height:50px;background:color-mix(in srgb,#00262A 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.topbar-in{max-width:1280px;margin:0 auto;height:100%;padding:0 24px;display:flex;align-items:center;gap:20px}
+.topbar a{color:var(--ink-2);text-decoration:none;font-size:15px;line-height:1;padding:8px 2px;border-bottom:2px solid transparent}
+.topbar a:hover,.topbar a:focus-visible{color:var(--ink);border-bottom-color:var(--accent)}
+.tb-home{display:inline-flex;align-items:center;gap:9px;font-weight:700;color:var(--ink)!important;letter-spacing:.04em;text-transform:uppercase;font-size:14px!important}
+.tb-home svg{width:18px;height:18px;flex:none;color:var(--accent)}
+.tb-links{margin-left:auto;display:flex;gap:22px}
+@media (max-width:640px){.topbar-in{padding:0 16px;gap:12px}.tb-links{gap:14px}.tb-home span{display:none}.topbar a{font-size:14px}}
+.dhead{top:50px!important}
+html{scroll-padding-top:66px}
+html.in-detail{scroll-padding-top:130px}
 </style>
 </head>
 <body>
+<nav class="topbar" aria-label="Seitennavigation"><div class="topbar-in">
+  <a href="./" class="tb-home" data-nav="top" aria-label="Home: zum Seitenanfang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg><span>Praktikum Stoss</span></a>
+  <div class="tb-links"><a href="#einleitung" data-nav="einleitung">Einleitung</a><a href="#versuchsaufbau" data-nav="versuchsaufbau">Aufbau</a><a href="#auswertung" data-nav="auswertung">Stösse</a></div>
+</div></nav>
 
 <header class="masthead dark">
   <svg class="mh-lines" viewBox="0 0 520 720" preserveAspectRatio="xMaxYMid meet" aria-hidden="true"><line x1="470" y1="0" x2="120" y2="520" stroke="#00BCD4" stroke-opacity="0.35" stroke-width="1.2"/><line x1="480" y1="30" x2="150" y2="560" stroke="#00BCD4" stroke-opacity="0.45" stroke-width="2"/><line x1="490" y1="10" x2="140" y2="575" stroke="#00BCD4" stroke-opacity="0.55" stroke-width="1.2"/><line x1="500" y1="60" x2="215" y2="555" stroke="#00BCD4" stroke-opacity="0.65" stroke-width="3"/><line x1="455" y1="40" x2="90" y2="700" stroke="#00BCD4" stroke-opacity="0.75" stroke-width="1"/><line x1="475" y1="20" x2="240" y2="450" stroke="#00BCD4" stroke-opacity="0.85" stroke-width="1"/></svg>

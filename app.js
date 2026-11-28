@@ -606,6 +606,7 @@ function showTable() { history.pushState(null, '', location.pathname + location.
 function route(nav) {
   const id = (location.hash.match(/^#m([\d.]+)$/) || [])[1], run = RUNS.find(r => r.id === id);
   $('viewOverview').hidden = !!run; $('viewDetail').hidden = !run;
+  document.documentElement.classList.toggle('in-detail', !!run);
   if (run) {
     selectRun(run.id);
     if (nav) $('viewDetail').scrollIntoView({ block: 'start' });
@@ -618,6 +619,13 @@ function route(nav) {
   }
 }
 addEventListener('popstate', () => route(true));
+// Kopfleiste: Home und Sprungmarken, auch aus der Einzelansicht heraus
+document.querySelectorAll('.topbar [data-nav]').forEach(el => el.addEventListener('click', ev => {
+  ev.preventDefault();
+  if (!$('viewDetail').hidden) { history.pushState(null, '', location.pathname + location.search); route(false); }
+  const id = el.dataset.nav, target = id === 'top' ? null : document.getElementById(id);
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else scrollTo({ top: 0, behavior: 'smooth' });
+}));
 $('backBtn').addEventListener('click', showTable);
 async function selectRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
