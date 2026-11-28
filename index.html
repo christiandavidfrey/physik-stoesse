@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stösse zweier Wagen</title>
-<meta name="description" content="Zusatzseite zu Praktikum 9 „Stoss“ (Physik 1): Messdaten, interaktive Auswertung und Federmodell.">
+<meta name="description" content="Zusatzseite zu Praktikum 1 „Stoss“ (Physik 1) von Christian Frey, Mika Hutmacher und Moritz Isser: Messdaten und interaktive Auswertung.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -194,6 +194,15 @@ html{scroll-padding-top:90px}
 .photos figcaption b{color:var(--ink)}
 @media (max-width:640px){.photos{grid-template-columns:1fr 1fr;gap:14px}.photos .last{grid-column:1 / -1}}
 .masthead{position:relative}
+.masthead{overflow:hidden}
+.mh-in{position:relative;z-index:1}
+.pill{display:inline-block;margin-right:8px;padding:4px 12px;border:1px solid #00717F;border-radius:999px;color:#7FE3F0;font-size:13.5px;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,188,212,.08)}
+.masthead h1 .hl{color:#00BCD4}
+.team{list-style:none;padding:0;margin:40px 0 44px;display:flex;flex-wrap:wrap;gap:12px}
+.team li{display:flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;border-radius:999px;background:rgba(227,246,248,.07);border:1px solid rgba(127,202,212,.25);font-size:17px;font-weight:600;color:#E3F6F8}
+.team .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#00BCD4,#00717F);color:#001315;font-size:13px;font-weight:700;letter-spacing:.03em}
+@media (max-width:640px){.team li{font-size:15.5px}}
+
 .dhead .simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
 #modell{display:none!important}
 body.no-sim .sim-only{display:none!important}
@@ -221,12 +230,19 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 </head>
 <body>
 
-<header class="masthead dark"><div class="col">
-  <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
-  <h1>Stösse zweier Wagen</h1>
-  <p class="deck">Zusatz zum Bericht: alle 12 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
+<header class="masthead dark">
+  <div class="col mh-in">
+  <p class="kicker"><span class="pill">Physik 1</span><span class="pill">Praktikum 1 „Stoss“</span></p>
+  <h1><span class="hl">Stösse</span> zweier Wagen</h1>
+  <p class="deck">Impulserhaltung, Energie und Kraftstoss bei elastischen, teilelastischen und inelastischen Stössen. Alle 12 Messungen zum Abspielen, mit x(t), v(t) und a(t).</p>
+  <ul class="team" aria-label="Gruppe">
+    <li><span class="av">CF</span>Christian Frey</li>
+    <li><span class="av">MH</span>Mika Hutmacher</li>
+    <li><span class="av">MI</span>Moritz Isser</li>
+  </ul>
   <p class="meta">Messungen <b>12</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact" style="display:none"></span></p>
-</div></header>
+  </div>
+</header>
 
 
 <main>
