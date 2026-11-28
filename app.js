@@ -143,8 +143,10 @@ async function loadRaw(run) {
     const lim = (s1[i] ?? x1[i]) - D;
     x2f[i] = inel && t[i] > run.tc ? lim : Math.min(x2f[i], lim);
   }
-  const first = x2f.find(v => v !== null) ?? 0.28;
-  for (let i = 0; i < x2f.length && x2f[i] === null; i++) x2f[i] = first;
+  // Startet Wagen 2 unter 0,20 m (fährt aus der Sensor-Totzone heraus), rückwärts mit der ersten gemessenen Geschwindigkeit ergänzen
+  const i0 = x2f.findIndex(v => v !== null);
+  if (i0 < 0) x2f.fill(0.28);
+  else { const w0 = i0 > 0 ? Math.max(0, v2[i0] ?? 0) : 0; for (let i = i0 - 1; i >= 0; i--) x2f[i] = Math.max(0.14, x2f[i + 1] - w0 * DT); }
   const s2f = sg(x2f, SMOOTH, 0), v2f = sg(x2f, SMOOTH, 1);
   return rawCache[run.id] = { t, x1, x2, x2f, s2f, v2f, v1, v2, a1, a2, s1, s2, D, lo: t[lo], hi: t[hi], J, amax };
 }
@@ -456,12 +458,18 @@ function renderDeriv() {
     let k = i; while (k < raw.x2.length && raw.x2[k] === null) k++;
     if (k - i >= 10) cutIdx.push(i);
   }
+  // ebenso dort, wo Wagen 2 von unter 0,20 m kommend erstmals gemessen wird (z. B. Wagen fahren aufeinander zu)
+  for (let i = 1; i < raw.x2.length; i++) if (raw.x2[i] !== null && raw.x2[i - 1] === null) {
+    let k = i - 1; while (k >= 0 && raw.x2[k] === null) k--;
+    if (i - 1 - k >= 10) cutIdx.push(i);
+  }
+  cutIdx.sort((p, q) => p - q);
   const cutTs = cutIdx.map(i => raw.t[i]);
   const iX = cutIdx.length ? cutIdx[0] : -1, tCut = iX > 0 ? raw.t[iX] : NaN;
   const ext = [];   // keine Fortsetzung von v₂ nach der 0,20-m-Grenze (auf Wunsch entfernt)
   const cut = { ts: cutTs, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
   $('cutNote').hidden = !(iX > 0);
-  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die letzten 0,07 s davor sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer.</span>`;
+  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 die Grenze von 0,20 m kreuzt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die 0,07 s direkt an der Linie sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
