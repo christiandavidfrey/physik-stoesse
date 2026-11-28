@@ -580,8 +580,9 @@ fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error
   const track = g.querySelector('.gal-track'), slides = [...track.children], thumbs = [...g.querySelectorAll('.gal-thumbs button')];
   const prev = g.querySelector('.gal-prev'), next = g.querySelector('.gal-next');
   const cur = () => Math.round(track.scrollLeft / (track.clientWidth + 16));
-  const go = i => { i = Math.max(0, Math.min(slides.length - 1, i)); track.scrollTo({ left: slides[i].offsetLeft - track.offsetLeft, behavior: reduceMotion ? 'auto' : 'smooth' }); };
-  const update = () => { const i = cur(); thumbs.forEach((t, k) => t.setAttribute('aria-current', k === i)); prev.disabled = i === 0; next.disabled = i === slides.length - 1; };
+  const n = slides.length, count = g.querySelector('.gal-count');
+  const go = i => { i = ((i % n) + n) % n; track.scrollTo({ left: slides[i].offsetLeft - track.offsetLeft, behavior: reduceMotion ? 'auto' : 'smooth' }); };
+  const update = () => { const i = Math.min(n - 1, cur()); thumbs.forEach((t, k) => t.setAttribute('aria-current', k === i)); count.textContent = `${i + 1} / ${n}`; };
   prev.addEventListener('click', () => go(cur() - 1)); next.addEventListener('click', () => go(cur() + 1));
   thumbs.forEach((t, k) => t.addEventListener('click', () => go(k)));
   track.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { e.preventDefault(); go(cur() + 1); } if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur() - 1); } });
