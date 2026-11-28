@@ -35,7 +35,7 @@ const AUFBAU_TEXT = {
   'gleich (einer ruht)': 'gleich schwere Wagen, einer ruht',
   'gleich (gegeneinander)': 'gleich schwere Wagen fahren aufeinander zu',
 };
-const EXPECTED_RATIO = { 'leicht→schwer': 2, 'schwer→leicht': 0.5, 'gleich (einer ruht)': 1, 'gleich (gegeneinander)': 1 };
+const EXPECTED_RATIO = { 'leicht→schwer': 541 / 291, 'schwer→leicht': 291 / 541, 'gleich (einer ruht)': 1, 'gleich (gegeneinander)': 1 };
 
 // ===================== CSV =====================
 function parseCSV(text) {
@@ -148,6 +148,19 @@ document.querySelectorAll('[data-strobe]').forEach(svg => {
     <text x="${px(0.05)}" y="${py(0.58) - 6}" font-family="Calibri, Carlito, sans-serif" font-size="13" fill="var(--ink-2)">W2</text>`;
 });
 
+// ===================== Schalter: Simulation ein/aus =====================
+let SIM_ON = true;
+try { SIM_ON = localStorage.getItem('simOn') !== '0'; } catch (e) {}
+function applySim() {
+  document.body.classList.toggle('no-sim', !SIM_ON);
+  const b = $('simBtn'); b.setAttribute('aria-pressed', SIM_ON); b.textContent = 'Simulation: ' + (SIM_ON ? 'ein' : 'aus');
+}
+$('simBtn').addEventListener('click', () => {
+  SIM_ON = !SIM_ON; try { localStorage.setItem('simOn', SIM_ON ? '1' : '0'); } catch (e) {}
+  applySim(); if (SIM_ON) renderModel();
+});
+applySim();
+
 // ===================== Versuchsaufbau: gewählte Messung abspielen =====================
 // Gefüllte Wagen: geglättete Messwerte (Savitzky-Golay, kein Rohrauschen). Umriss: Federmodell mit denselben Startwerten.
 const SIM = { L: 1.2, cart: 0.16, buf: 0.018 };   // buf: Aufsatz je Wagen, beide Wagen tragen denselben
@@ -172,8 +185,8 @@ function fillSetupFigures() {
   const set = (id, html) => { $(id).innerHTML = html; };
   set('r_v1', `${fmt(r.v1, 2)} <span>→</span> ${fmt(r.u1, 2)}<span class="u">m/s, Wagen 1</span>`);
   set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}<span class="u">m/s, Wagen 2</span>`);
-  set('r_e', `${fmt(Math.max(r.e, 0), 2)}<span class="u">Modell: ${fmt(eM, 2)}</span>`);
-  set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 1)} (${r.aufbau})</span>`);
+  set('r_e', `${fmt(Math.max(r.e, 0), 2)}<span class="u sim-only">Modell: ${fmt(eM, 2)}</span>`);
+  set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 2)} (${r.aufbau})</span>`);
 }
 document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
   ani.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); if (ani.playing) playSetup();
@@ -263,7 +276,7 @@ $('sPlay').addEventListener('click', () => playSetup());
     cart(p.c1, col1, 'W1', w1, mt(run.m1, '₁'), 1);
     // Modell: nur im simulierten Zeitfenster
     const M = ani.model;
-    if (M && t >= M.t0 && t <= M.t1) {
+    if (SIM_ON && M && t >= M.t0 && t <= M.t1) {
       const q = M.out[Math.min(M.out.length - 1, Math.round((t - M.t0) / DT))];
       const cl = c => Math.min(SIM.L - C / 2, Math.max(C / 2, c));   // Modell kennt keine Schienenenden
       ghost(cl(c2of(q.x2)), muted); ghost(cl(c1of(q.x1)), muted);
@@ -374,7 +387,7 @@ function renderOverviewCharts() {
 
   chart('chM', { type: 'line',
     data: { labels, datasets: [
-      ...[2, 1, 0.5].map(v => ({ data: labels.map(() => v), borderColor: muted, borderDash: [5, 5], borderWidth: 1, pointRadius: 0, pointHitRadius: 0, order: 3 })),
+      ...[541 / 291, 1, 291 / 541].map(v => ({ data: labels.map(() => v), borderColor: muted, borderDash: [5, 5], borderWidth: 1, pointRadius: 0, pointHitRadius: 0, order: 3 })),
       ...present.map(T => ({ label: T.label, data: order.map(r => r.T === T ? r.ratio : null), showLine: false, pointStyle: T.shape, backgroundColor: css(T.color), borderColor: surface, borderWidth: 2, pointRadius: 8, pointHoverRadius: 10, pointHitRadius: 12 })),
     ] },
     options: { maintainAspectRatio: false, animation: o.anim,
@@ -443,7 +456,7 @@ function renderDeriv() {
 const mk = $('mk'), mc = $('mc'), mm1 = $('mm1'), mm2 = $('mm2');
 function defaultMasses(run) {
   if (run.hasMass) return [run.m1, run.m2];
-  return { 'leicht→schwer': [0.25, 0.5], 'schwer→leicht': [0.5, 0.25] }[run.aufbau] || [0.25, 0.25];
+  return { 'leicht→schwer': [0.291, 0.541], 'schwer→leicht': [0.541, 0.291] }[run.aufbau] || [0.291, 0.291];
 }
 async function selectModelRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;

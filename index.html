@@ -186,6 +186,8 @@ html{scroll-padding-top:90px}
 .dhead-t b{font-size:20px}
 .dhead-t span{font-size:14px;color:var(--ink-2)}
 .dhead-nav{display:flex;gap:6px}
+.simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
+body.no-sim #modell,body.no-sim .sim-only{display:none!important}
 @media (max-width:640px){.dhead-in{padding:10px 16px;flex-wrap:wrap}.dhead-t{order:3;flex-basis:100%}.dhead-nav{margin-left:auto}}
 #viewDetail > section:first-of-type{padding-top:110px}
 .masthead{padding-bottom:40px}
@@ -213,8 +215,8 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <header class="masthead dark"><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
-  <p class="deck">Zusatz zum Bericht: alle 13 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
-  <p class="meta">Messungen <b>13</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
+  <p class="deck">Zusatz zum Bericht: alle 12 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
+  <p class="meta">Messungen <b>12</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
 </div></header>
 
 
@@ -224,7 +226,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <section id="auswertung" class="dark">
   <div class="col">
     <h2>Unsere Stösse</h2>
-    <p class="lede">13 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe, Ableitung und Federmodell; über „Alle Stösse“ geht es zurück.</p>
+    <p class="lede">12 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe, Ableitung und Federmodell; über „Alle Stösse“ geht es zurück.</p>
     <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
   </div>
   <figure class="wide">
@@ -245,7 +247,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <section id="ueberblick">
   <div class="col">
     <h2>Überblick</h2>
-    <p class="lede">Alle Messungen auf einen Blick: Liegen die Massenverhältnisse aus der Impulserhaltung auf den Linien 2, 1 und ½ ihres Aufbaus?</p>
+    <p class="lede">Alle Messungen auf einen Blick: Liegen die Massenverhältnisse aus der Impulserhaltung auf den gewogenen Verhältnissen 1,86 (541 g : 291 g), 1 und 0,54?</p>
   </div>
   <figure class="mid">
     <div class="legend" id="lgTypes"></div>
@@ -263,13 +265,14 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   <div class="dhead-in">
     <button class="btn" id="backBtn">← Alle Stösse</button>
     <div class="dhead-t"><b id="dhTitle"></b><span id="dhInfo"></span></div>
+    <button class="btn simtog" id="simBtn" aria-pressed="true" title="Federmodell in der Wiedergabe und im Abschnitt Federmodell ein- oder ausblenden">Simulation: ein</button>
     <div class="dhead-nav"><button class="btn" id="prevBtn" aria-label="Vorheriger Stoss"></button><button class="btn" id="nextBtn" aria-label="Nächster Stoss"></button></div>
   </div>
 </nav>
 <section id="aufbau" class="tint">
   <div class="col">
     <h2>Der Stoss</h2>
-    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</p>
+    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</span> Mit dem Schalter „Simulation“ oben lässt sich das Modell ein- und ausblenden.</p>
     <details class="more">
       <summary>Versuchsaufbau</summary>
       <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Wagen 1 ist der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
@@ -299,7 +302,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <span class="slabel" style="margin-left:12px">Tempo</span>
       <button class="btn" data-speed="1" aria-pressed="true">Echtzeit</button>
       <button class="btn" data-speed="0.25" aria-pressed="false">Zeitlupe ¼</button>
-      <span class="legend" style="margin:0 0 0 auto"><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="var(--ink)"/></svg>Messung</span><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="none" stroke="var(--muted)" stroke-dasharray="3 2" stroke-width="1.4"/></svg>Federmodell</span></span>
+      <span class="legend" style="margin:0 0 0 auto"><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="var(--ink)"/></svg>Messung</span><span class="sim-only"><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="none" stroke="var(--muted)" stroke-dasharray="3 2" stroke-width="1.4"/></svg>Federmodell</span></span>
     </div>
     <div class="kpis dark black">
       <div class="fig"><div>Wagen 1: v₁ → v₁′</div><strong id="r_v1"></strong></div>
@@ -350,7 +353,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
         <li>Keine Reibung, keine Kraft ausserhalb des Stosses, keine Schienenenden.</li>
         <li>Die reine Feder gibt alle Energie zurück, sagt also immer e = 1 voraus. Mit k = 1000 N/m dauert der Stoss nur Hundertstelsekunden, gemessen sind rund 0,2 s.</li>
         <li>Erweiterung, nicht im Original: eine Dämpfung c, die nur während der Stauchung bremst. Damit lassen sich Schaumstoff und Klett annähern.</li>
-        <li>Die Massen sind Annahmen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</li>
+        <li>Massen gewogen: leicht 291 g, schwer 541 g (291 g + 2 Zusatzgewichte à 125,2 g).</li>
       </ul>
       <div class="formulas"><div class="f"><span>Bewegung</span><div class="formula" data-tex="m_1\ddot x_1 = F,\quad m_2\ddot x_2 = -F,\quad F = k\,\Delta + c\,\dot\Delta"></div></div></div>
     </details>
@@ -359,8 +362,8 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <div class="ctl">
       <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
       <label>Dämpfung c in N·s/m <output id="o_c"></output><input type="range" id="mc" min="0" max="20" step="0.5" value="0"></label>
-      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.05" max="0.5" step="0.005" value="0.25"></label>
-      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.05" max="0.5" step="0.005" value="0.5"></label>
+      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.05" max="0.8" step="0.001" value="0.291"></label>
+      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.05" max="0.8" step="0.001" value="0.541"></label>
     </div>
     <p class="note missing" id="modelMassNote">Massen angenommen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
     <p class="callout" id="modelE"></p>
