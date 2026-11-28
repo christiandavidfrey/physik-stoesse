@@ -728,8 +728,7 @@ async function renderTables() {
     ['Nr.', 'Stossart', 'Aufbau', 'u₁ gemessen', 'u₁ Theorie', 'u₂ gemessen', 'u₂ Theorie'],
     runs.filter(r => r.T.key !== 'teilelastisch').map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
       if (r.T.key === 'elastisch') { t1 = (P - r.m2 * (r.v1 - r.v2)) / M; t2 = (P + r.m1 * (r.v1 - r.v2)) / M; } else if (r.T.key === 'inelastisch') t1 = t2 = P / M;
-      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2)]; }),
-    'Inelastisch etwas langsamer als erwartet: Rollreibung zwischen Stoss und Fitfenster.'));
+      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2)]; })));
   $('tablesBox').innerHTML = H.join('');
   tablesDone = true;
 }
