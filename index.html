@@ -20,7 +20,7 @@
 }
 :root .masthead{background:linear-gradient(180deg,#00262A 0%,#004B55 100%);--ink:#E3F6F8;--ink-2:#B3E4EA;--muted:#7FCAD4;--rule:#00717F;--raised:#003840;color:var(--ink)}
 :root .btn.play,:root .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--raised)}
-:root .masthead h1{color:#FFFFFF}
+:root .masthead h1{color:#00BCD4}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--raised);color:var(--ink);font:400 16.5px/1.55 Calibri, Carlito, "Segoe UI", sans-serif;font-variant-numeric:tabular-nums}
@@ -196,12 +196,12 @@ html{scroll-padding-top:90px}
 .masthead{position:relative}
 .masthead{overflow:hidden}
 .mh-in{position:relative;z-index:1}
-.pill{display:inline-block;margin-right:8px;padding:4px 12px;border:1px solid #00717F;border-radius:999px;color:#7FE3F0;font-size:13.5px;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,188,212,.08)}
-.masthead h1 .hl{color:#00BCD4}
-.team{list-style:none;padding:0;margin:40px 0 44px;display:flex;flex-wrap:wrap;gap:12px}
-.team li{display:flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;border-radius:999px;background:rgba(227,246,248,.07);border:1px solid rgba(127,202,212,.25);font-size:17px;font-weight:600;color:#E3F6F8}
-.team .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#00BCD4,#00717F);color:#001315;font-size:13px;font-weight:700;letter-spacing:.03em}
-@media (max-width:640px){.team li{font-size:15.5px}}
+.mh-lines{position:absolute;right:-40px;top:-6%;height:92%;width:auto;max-width:45vw;pointer-events:none}
+.masthead h1{text-transform:uppercase;font-weight:400;letter-spacing:.02em;color:#00BCD4}
+.mh-names{margin:10px 0 0;font-size:19px;color:#E3F6F8}
+.mh-foot{margin:56px 0 0;text-align:right;font-size:20px;line-height:1.35;color:#7FE3F0}
+@media (max-width:900px){.mh-lines{opacity:.35}}
+
 
 .dhead .simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
 #modell{display:none!important}
@@ -231,16 +231,13 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <body>
 
 <header class="masthead dark">
+  <svg class="mh-lines" viewBox="0 0 520 720" preserveAspectRatio="xMaxYMid meet" aria-hidden="true"><line x1="470" y1="0" x2="120" y2="520" stroke="#00BCD4" stroke-opacity="0.35" stroke-width="1.2"/><line x1="480" y1="30" x2="150" y2="560" stroke="#00BCD4" stroke-opacity="0.45" stroke-width="2"/><line x1="490" y1="10" x2="140" y2="575" stroke="#00BCD4" stroke-opacity="0.55" stroke-width="1.2"/><line x1="500" y1="60" x2="215" y2="555" stroke="#00BCD4" stroke-opacity="0.65" stroke-width="3"/><line x1="455" y1="40" x2="90" y2="700" stroke="#00BCD4" stroke-opacity="0.75" stroke-width="1"/><line x1="475" y1="20" x2="240" y2="450" stroke="#00BCD4" stroke-opacity="0.85" stroke-width="1"/></svg>
   <div class="col mh-in">
-  <p class="kicker"><span class="pill">Physik 1</span><span class="pill">Praktikum 1 „Stoss“</span></p>
-  <h1><span class="hl">Stösse</span> zweier Wagen</h1>
-  <p class="deck">Impulserhaltung, Energie und Kraftstoss bei elastischen, teilelastischen und inelastischen Stössen. Alle 12 Messungen zum Abspielen, mit x(t), v(t) und a(t).</p>
-  <ul class="team" aria-label="Gruppe">
-    <li><span class="av">CF</span>Christian Frey</li>
-    <li><span class="av">MH</span>Mika Hutmacher</li>
-    <li><span class="av">MI</span>Moritz Isser</li>
-  </ul>
-  <p class="meta">Messungen <b>12</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact" style="display:none"></span></p>
+    <h1>Praktikum Stoss</h1>
+    <p class="mh-names">Christian Frey, Mika Hutmacher, Moritz Isser</p>
+    <p class="deck">Physik 1. Impulserhaltung, Energie und Kraftstoss bei elastischen, teilelastischen und inelastischen Stössen. Alle 12 Messungen zum Abspielen, mit x(t), v(t) und a(t).</p>
+    <p class="meta">Messungen <b>12</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact" style="display:none"></span></p>
+    <p class="mh-foot">14.11.26 – 21.11.26<br>Wolfgang Tress</p>
   </div>
 </header>
 
