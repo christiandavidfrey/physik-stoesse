@@ -237,7 +237,7 @@ function fillSetupFigures() {
   const m = ani.model, eM = m ? m.e : NaN;
   const set = (id, html) => { $(id).innerHTML = html; };
   set('r_v1', `${fmt(r.v1, 2)} <span>→</span> ${fmt(r.u1, 2)}<span class="u">m/s, Wagen 1</span>`);
-  set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}${r.uns.includes('v2_nach') ? '*' : ''}<span class="u">m/s, Wagen 2${r.uns.includes('v2_nach') ? ' · * v₂′ unsicher, nach dem Stoss nur kurz messbar' : ''}</span>`);
+  set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}<span class="u">m/s, Wagen 2</span>`);
   set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 2)} (${r.aufbau})</span>`);
 }
 document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
@@ -437,7 +437,7 @@ let ORDER = [];   // Tabellenreihenfolge: nach Stossart, dann Aufbau
 function renderTable() {
   const missing = '<span class="missing">fehlt</span>';
   ORDER = [...RUNS].sort((a, b) => TYPES.indexOf(a.T) - TYPES.indexOf(b.T) || AUFBAU.indexOf(a.aufbau) - AUFBAU.indexOf(b.aufbau) || parseFloat(a.id) - parseFloat(b.id));
-  const U = (r, key, v) => r.uns.includes(key) ? `<span class="uns" title="unsicher: Wagen 2 nach dem Stoss nur kurz messbar">${fmt(v)}*</span>` : fmt(v);
+  const U = (r, key, v) => fmt(v);
   $('table').querySelector('tbody').innerHTML = TYPES.map(T => {
     const rs = ORDER.filter(r => r.T === T); if (!rs.length) return '';
     return `<tr class="grp"><th colspan="12"><span class="swatch" style="background:var(${T.color})"></span>${T.label}<small>beide Wagen mit ${T.puffer}, ${rs.length} Messungen</small></th></tr>` + rs.map(r => `<tr data-run="${r.id}" tabindex="0" title="Stoss ${r.id} öffnen">
