@@ -378,8 +378,6 @@ const zonePlugin = {
     ctx.save(); ctx.beginPath(); ctx.rect(a.left, top, a.right - a.left, a.bottom - top); ctx.clip();
     ctx.strokeStyle = o.color; ctx.lineWidth = 1;
     for (let x = a.left - (a.bottom - top); x < a.right; x += 7) { ctx.beginPath(); ctx.moveTo(x, a.bottom); ctx.lineTo(x + (a.bottom - top), top); ctx.stroke(); }
-    ctx.fillStyle = o.text; ctx.font = '500 13px Calibri, Carlito, sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText('unter 0,20 m: Sensor misst nicht', a.right - 6, top + 15);
     ctx.restore();
   },
 };
@@ -462,11 +460,10 @@ function renderDeriv() {
   const iX = cutIdx.length ? cutIdx[0] : -1, tCut = iX > 0 ? raw.t[iX] : NaN;
   const ext = [];   // keine Fortsetzung von v₂ nach der 0,20-m-Grenze (auf Wunsch entfernt)
   const cut = { ts: cutTs, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
-  const cutLbl = ['Wagen 2 < 20 cm: nicht gemessen'];
   $('cutNote').hidden = !(iX > 0);
   if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die letzten 0,07 s davor sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), cut }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
