@@ -701,9 +701,9 @@ async function renderTables() {
   H.push(tbl('tA', 'Tabelle A: Massen und Geschwindigkeiten', 'Lineare Fits vor (v) und nach (u) dem Stoss, in m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'm₁ / g', 'm₂ / g', 'v₁', 'v₂', 'u₁', 'u₂'],
     runs.map(r => [...base(r), f(r.m1 * 1000, 1), f(r.m2 * 1000, 1), U(r, 'v1', r.v1), U(r, 'v2', r.v2), U(r, 'v1_nach', r.u1), U(r, 'v2_nach', r.u2)])));
-  H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls in g·m/s.',
+  H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls in kg·m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'p vor', 'p nach'],
-    runs.map(r => [...base(r), f(r.p0 * 1000, 1), f(r.p1 * 1000, 1)])));
+    runs.map(r => [...base(r), f(r.p0), f(r.p1)])));
   H.push(tbl('tC', 'Tabelle C: Kinetische Energie vor und nach dem Stoss', 'Kinetische Energie beider Wagen in mJ.',
     ['Nr.', 'Stossart', 'Aufbau', 'E vor', 'E nach'],
     runs.map(r => [...base(r), f(r.E0 * 1000, 1), f(r.E1 * 1000, 1)])));
