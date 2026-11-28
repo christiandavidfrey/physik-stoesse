@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
-<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}</script>
 <style>
 :root{
   --paper:#E8F3F5; --raised:#F2F8F9; --ink:#00262A; --ink-2:#004B55; --muted:#3F6B71;
@@ -18,24 +17,6 @@
   --accent:#008494; --focus:#008494; --warn:#005E6A;
   --band-tint:#E4F1F3; --band-deep:#D3E8EC; --band-dark:#E9F4F6; --band-black:#DCEDF0;
   color-scheme:light;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-  --paper:#001315; --raised:#00191C; --ink:#E3F6F8; --ink-2:#A6D9E0; --muted:#6DAEB8;
-  --rule:#0B3C43; --rail:#00616D; --w2:#00BCD4;
-  --c-el:#E3F6F8; --c-in:#00BCD4; --c-vi:#00717F; --c-before:#0B3C43;
-  --accent:#00BCD4; --focus:#00BCD4; --warn:#00BCD4;
-  --band-tint:#00262A; --band-deep:#002F34; --band-dark:#001315; --band-black:#000D0F;
-  color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#001315; --raised:#00191C; --ink:#E3F6F8; --ink-2:#A6D9E0; --muted:#6DAEB8;
-  --rule:#0B3C43; --rail:#00616D; --w2:#00BCD4;
-  --c-el:#E3F6F8; --c-in:#00BCD4; --c-vi:#00717F; --c-before:#0B3C43;
-  --accent:#00BCD4; --focus:#00BCD4; --warn:#00BCD4;
-  --band-tint:#00262A; --band-deep:#002F34; --band-dark:#001315; --band-black:#000D0F;
-  color-scheme:dark;
 }
 :root .masthead{background:linear-gradient(180deg,#00262A 0%,#004B55 100%);--ink:#E3F6F8;--ink-2:#B3E4EA;--muted:#7FCAD4;--rule:#00717F;--raised:#003840;color:var(--ink)}
 :root .btn.play,:root .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--raised)}
@@ -213,10 +194,7 @@ html{scroll-padding-top:90px}
 .photos figcaption b{color:var(--ink)}
 @media (max-width:640px){.photos{grid-template-columns:1fr 1fr;gap:14px}.photos .last{grid-column:1 / -1}}
 .masthead{position:relative}
-.themetog{position:absolute;top:20px;right:24px}
-.dhead .themetog{position:static}
-@media (max-width:640px){.dhead .themetog{display:none}}
-.simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
+.dhead .simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
 #modell{display:none!important}
 body.no-sim .sim-only{display:none!important}
 @media (max-width:640px){.dhead-in{padding:10px 16px;flex-wrap:wrap}.dhead-t{order:3;flex-basis:100%}.dhead-nav{margin-left:auto}}
@@ -243,7 +221,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 </head>
 <body>
 
-<header class="masthead dark"><button class="btn themetog" type="button" aria-label="Hell oder dunkel umschalten"></button><div class="col">
+<header class="masthead dark"><div class="col">
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
   <p class="deck">Zusatz zum Bericht: alle 12 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
@@ -315,7 +293,6 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   <div class="dhead-in">
     <button class="btn" id="backBtn">← Alle Stösse</button>
     <div class="dhead-t"><b id="dhTitle"></b><span id="dhInfo"></span></div>
-    <button class="btn themetog" type="button" aria-label="Hell oder dunkel umschalten"></button>
     <div class="dhead-nav"><button class="btn" id="prevBtn" aria-label="Vorheriger Stoss"></button><button class="btn" id="nextBtn" aria-label="Nächster Stoss"></button></div>
   </div>
 </nav>

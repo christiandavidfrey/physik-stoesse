@@ -606,17 +606,3 @@ fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error
   update();
 })();
 
-// ===================== Hell/Dunkel-Schalter =====================
-const darkMQ = matchMedia('(prefers-color-scheme: dark)');
-const isDark = () => (document.documentElement.dataset.theme || (darkMQ.matches ? 'dark' : 'light')) === 'dark';
-function updateThemeButtons() {
-  document.querySelectorAll('.themetog').forEach(b => { b.textContent = isDark() ? '☀ Hell' : '☾ Dunkel'; });
-}
-document.querySelectorAll('.themetog').forEach(b => b.addEventListener('click', () => {
-  const t = isDark() ? 'light' : 'dark';
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('theme', t); } catch (e) {}
-  updateThemeButtons(); if (RUNS.length) renderAll();
-}));
-updateThemeButtons();
-darkMQ.addEventListener('change', () => { updateThemeButtons(); if (RUNS.length) renderAll(); });
