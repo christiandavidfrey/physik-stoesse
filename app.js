@@ -492,7 +492,7 @@ function renderDeriv() {
   if (g2.length) parts.push(`Wagen 2 von ${g2.join(' und von ')}`);
   if (g1.length) parts.push(`Wagen 1 von ${g1.join(' und von ')}`);
   $('cutNote').hidden = !parts.length;
-  if (parts.length) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Ist ein Wagen näher als etwa 20 cm an seinem Sensor, misst dieser nicht (Wagen 2: x unter 0,20 m, Wagen 1: x über 1,02 m). In dieser Messung fehlen deshalb ${parts.join(', ')}. Dort enden die Kurven. Die Werte direkt am Rand einer Lücke (0,07 s) sind mit einem einseitigen Glättungsfenster berechnet und etwas unsicherer.</span>`;
+  if (parts.length) $('cutNote').innerHTML = `<span>Näher als 20 cm am Sensor wird nicht gemessen. Hier fehlen ${parts.join(', ')}.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3) }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (Seite Sensor 1)'], [shapeSVG.line(c2), 'Wagen 2 (Seite Sensor 2)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
@@ -698,48 +698,28 @@ async function renderTables() {
       if (k - i >= 10) { const prev = g[g.length - 1]; if (prev && i - prev[1] < 60) prev[1] = k - 1; else g.push([i, k - 1]); } i = k; }
     return g.map(([p, q]) => `${fmt(t[p], 2)} – ${fmt(t[q], 2)} s`).join('; ') || '–'; };
   const H = [];
-  H.push(tbl('tA', 'Tabelle A: Massen und Geschwindigkeiten', 'Lineare Fits an die Rohdaten über 0,3 s, die 0,03 s vor dem Stossbeginn enden bzw. 0,03 s nach dem Stossende beginnen. v vor, u nach dem Stoss, in m/s.',
+  H.push(tbl('tA', 'Tabelle A: Massen und Geschwindigkeiten', 'Lineare Fits vor (v) und nach (u) dem Stoss, in m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'm₁ / g', 'm₂ / g', 'v₁', 'v₂', 'u₁', 'u₂'],
     runs.map(r => [...base(r), f(r.m1 * 1000, 1), f(r.m2 * 1000, 1), U(r, 'v1', r.v1), U(r, 'v2', r.v2), U(r, 'v1_nach', r.u1), U(r, 'v2_nach', r.u2)]),
-    '* unsicher: Wagen 2 ist nach dem Stoss weniger als 0,2 s messbar. In Stoss 3 liegt das Fenster noch im Stoss, der Wert ist zu klein.'));
-  H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls p = m₁v₁ + m₂v₂ in g·m/s. Bei Gesamtimpuls nahe null ist eine Prozentangabe nicht sinnvoll.',
+    '* unsicher: Wagen 2 nach dem Stoss nur kurz messbar.'));
+  H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls in g·m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'p vor', 'p nach', 'Δp', 'relativ'],
     runs.map(r => [...base(r), f(r.p0 * 1000, 1), f(r.p1 * 1000, 1), f((r.p1 - r.p0) * 1000, 1), Math.abs(r.p0) > 0.03 ? pc((r.p1 - r.p0) / Math.abs(r.p0) * 100) : '(p ≈ 0)'])));
-  H.push(tbl('tC', 'Tabelle C: Kinetische Energie vor und nach dem Stoss', 'E = ½m₁v₁² + ½m₂v₂² in mJ.',
+  H.push(tbl('tC', 'Tabelle C: Kinetische Energie vor und nach dem Stoss', 'Kinetische Energie beider Wagen in mJ.',
     ['Nr.', 'Stossart', 'Aufbau', 'E vor', 'E nach', 'ΔE', 'relativ'],
     runs.map(r => [...base(r), f(r.E0 * 1000, 1), f(r.E1 * 1000, 1), f((r.E1 - r.E0) * 1000, 1), pc(r.dE)])));
-  H.push(tbl('tD', 'Tabelle D: Kraftstoss, Stossdauer und Kraft', 'Kraftstoss ∫F dt = m∫a dt über die Stossdauer (|a₁| über 10 % des Maximums) im Vergleich zur Impulsänderung Δp = m(u − v) aus den Fits.',
-    ['Nr.', 'Stossart', 'Aufbau', '∫F₁ dt / N·s', 'Δp₁ / kg·m/s', 'Abw.', '∫F₂ dt / N·s', 'Δp₂ / kg·m/s', 'Δt / s', 'F̄ / N', 'F_max / N'],
+  H.push(tbl('tD', 'Tabelle D: Kraftstoss, Stossdauer und Kraft', 'Kraftstoss von Wagen 1 im Vergleich zur Impulsänderung aus den Fits.',
+    ['Nr.', 'Stossart', 'Aufbau', '∫F₁ dt / N·s', 'Δp₁ / kg·m/s', 'Δt / s', 'F̄ / N', 'F_max / N'],
     runs.map(r => { const raw = raws[r.id], lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
       const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
       const J1 = r.m1 * area(raw.a1), J2 = r.m2 * area(raw.a2), d1 = r.m1 * (r.u1 - r.v1), d2 = r.m2 * (r.u2 - r.v2), dt = raw.hi - raw.lo;
-      return [...base(r), f(J1), f(d1), pc((J1 - d1) / Math.abs(d1) * 100), f(J2), f(d2), f(dt, 2), f(Math.abs(d1) / dt, 2), f(Math.abs(r.m1 * raw.amax), 2)]; })));
-  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Elastisch: u aus Impuls- und Energieerhaltung. Inelastisch: gemeinsame Geschwindigkeit v_s = (m₁v₁ + m₂v₂)/(m₁ + m₂). Teilelastisch gibt es keine eindeutige Vorhersage.',
+      return [...base(r), f(J1), f(d1), f(dt, 2), f(Math.abs(d1) / dt, 2), f(Math.abs(r.m1 * raw.amax), 2)]; })));
+  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Geschwindigkeiten nach dem Stoss, gemessen und nach Theorie (elastisch bzw. inelastisch), in m/s.',
     ['Nr.', 'Stossart', 'Aufbau', 'u₁ gemessen', 'u₁ Theorie', 'u₂ gemessen', 'u₂ Theorie'],
     runs.map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
       if (r.T.key === 'elastisch') { t1 = (P - r.m2 * (r.v1 - r.v2)) / M; t2 = (P + r.m1 * (r.v1 - r.v2)) / M; } else if (r.T.key === 'inelastisch') t1 = t2 = P / M;
       return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2)]; }),
-    'Inelastisch sind die gemessenen Geschwindigkeiten betragsmässig immer etwas kleiner als v_s (negative Werte, also „höher“). Das ist Reibung: Die Fits geben die Geschwindigkeit etwa 0,2 s nach dem Kontakt an, in dieser Zeit bremst die Rollreibung (rund 0,05 m/s²) die gekoppelten Wagen um etwa 0,01 m/s.'));
-  H.push(tbl('tF', 'Tabelle F: Totzone der Sensoren', 'Zeitabschnitte, in denen ein Wagen näher als etwa 20 cm an seinem Sensor war (Sensor 2 zeigt dann fest 0,196 m, Sensor 1 fest 1,023 m). Diese Werte sind verworfen.',
-    ['Nr.', 'Stossart', 'Aufbau', 'Wagen 2 nicht messbar', 'Wagen 1 nicht messbar'],
-    runs.map(r => { const raw = raws[r.id]; return [...base(r), gaps(raw.x2, raw.t), gaps(raw.x1, raw.t)]; })));
-  H.push(tbl('tG', 'Tabelle G: Messzeit von Wagen 2 nach dem Stoss', 'Wie lange Wagen 2 nach dem Stossende noch gemessen wird, bevor er in die Totzone seines Sensors fährt. Unter etwa 0,2 s ist u₂ unsicher.',
-    ['Nr.', 'Stossart', 'Aufbau', 'Stossende', 'Wagen 2 in Totzone ab', 'messbare Zeit'],
-    runs.map(r => { const raw = raws[r.id], hi = Math.round(raw.hi / DT); let j = hi; while (j < raw.x2.length && raw.x2[j] !== null) j++;
-      const end = j < raw.x2.length ? raw.t[j] : NaN; return [...base(r), `${fmt(raw.hi, 2)} s`, ok(end) ? `${fmt(end, 2)} s` : 'bis Messende', ok(end) ? `${fmt(end - raw.hi, 2)} s` : `> ${fmt(raw.t[raw.t.length - 1] - raw.hi, 1)} s`]; })));
-  H.push(tbl('tH', 'Tabelle H: Stoss 3, u₂ je nach Fitbeginn', 'Wagen 2 ist nur bis 1,645 s messbar, der Federkontakt dauert bis 1,60 s. Je später der Fit beginnt, desto grösser der Betrag; aus der Impulserhaltung folgen −0,416 m/s.',
-    ['Fitbeginn', 'Punkte', 'u₂ / m/s'], [['1,40 s', '51', '−0,341'], ['1,46 s', '39', '−0,367'], ['1,50 s', '31', '−0,378'], ['1,55 s', '21', '−0,395'], ['1,60 s (Stossende)', '11', '−0,313 (zu wenig Punkte)']], '', 'left'));
-  H.push(tbl('tI', 'Tabelle I: Fehlerquellen', 'Übersicht der Fehlerquellen und ihrer Auswirkung.',
-    ['Fehlerquelle', 'betroffen', 'Auswirkung'], [
-      ['Sensorrauschen (0,5 bis 2 mm)', 'alle', 'v ± 0,002 bis 0,005 m/s, vernachlässigbar'],
-      ['Totzone der Sensoren (Grenzwerte 0,196 / 1,023 m)', 'alle', 'Daten fehlen; ohne Korrektur scheinbarer Stillstand'],
-      ['Kurze Messzeit von Wagen 2 nach dem Stoss', '1, 2, 3, 11 (stark: 1, 3)', 'u₂ unsicher (Stoss 3: 12 % zu klein, Stoss 1: eher zu gross)'],
-      ['Fitfenster reichte in den Stoss', '1, 2, 4, 8, 10, 12 (korrigiert); 3 (nicht korrigierbar)', 'Geschwindigkeiten bis 16 % zu klein'],
-      ['Reibung, Schienenneigung', 'alle', 'Impulsverlust von einigen Prozent'],
-      ['Gesamtimpuls ≈ 0', '4, 8, 12', 'Prozentangaben nicht sinnvoll'],
-      ['Massenannahme bei gleichen Massen', '3, 4, 7, 8, 11, 12', 'absolute Werte unsicher, Verhältnisse nicht'],
-      ['Glättung, Schwelle für Δt', 'alle (stark: inelastisch, 6, 10)', 'F_max und F̄ unsicher, ∫F dt kaum'],
-      ['Abprallen am Schienenende, zweiter Stoss', '1, 3, 11', 'kein Einfluss auf die Auswertung']], '', 'left'));
+    'Inelastisch etwas langsamer als erwartet: Rollreibung zwischen Stoss und Fitfenster.'));
   $('tablesBox').innerHTML = H.join('');
   tablesDone = true;
 }

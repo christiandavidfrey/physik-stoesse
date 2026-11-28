@@ -296,8 +296,7 @@ html.in-detail{scroll-padding-top:130px}
       <li>Kraftverlauf, Stossdauer und Kraftstoss zu bestimmen und</li>
       <li>die Messungen mit einem Federmodell aus Berkeley Madonna zu vergleichen.</li>
     </ul>
-    <p>Diese Seite ergänzt den Bericht. Sie enthält alle 12 Messungen, je vier pro Stossart: leichter Wagen auf schweren, schwerer auf leichten, gleich schwere Wagen mit einem ruhenden Wagen und gleich schwere Wagen, die aufeinander zufahren. Die Tabelle im Abschnitt „Stösse“ fasst für jede Messung die Geschwindigkeiten vor und nach dem Stoss, die Impulse und die relative Änderung der kinetischen Energie zusammen.</p>
-    <p>Ein Klick auf eine Zeile öffnet die Einzelansicht der Messung. Dort wird der Stoss aus den geglätteten Ortsdaten der beiden Ultraschallsensoren abgespielt, in Echtzeit oder in Zeitlupe. Der Schalter „Simulation“ unter der Wiedergabe blendet zum Vergleich das Federmodell als Umriss ein oder aus. Darunter zeigen drei Diagramme Ort x(t), Geschwindigkeit v(t) und Beschleunigung a(t) beider Wagen. Geschwindigkeit und Beschleunigung sind numerisch aus dem Ort abgeleitet. Aus der Beschleunigung folgen Kraftverlauf, Stossdauer und Kraftstoss. Mit den Pfeilen im Kopf der Einzelansicht wechselt man zur vorherigen oder nächsten Messung.</p>
+    <p>Diese Seite ergänzt den Bericht. Ein Klick auf einen Stoss in der Tabelle öffnet die Wiedergabe (mit zuschaltbarer Simulation) und die Diagramme x(t), v(t) und a(t). Alle Werte stehen zusätzlich unter „Tabellen“.</p>
   </div>
 </section>
 
@@ -323,7 +322,7 @@ html.in-detail{scroll-padding-top:130px}
 <section id="auswertung" class="dark">
   <div class="col">
     <h2>Stösse</h2>
-    <p class="lede">12 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe und Ableitung; über „Alle Stösse“ geht es zurück.</p>
+    <p class="lede">12 Messungen, drei Stossarten mit je vier Aufbauten. Eine Zeile anklicken öffnet den Stoss.</p>
     <p class="callout" id="massNote" style="display:none"></p>
   </div>
   <figure class="wide">
@@ -336,7 +335,7 @@ html.in-detail{scroll-padding-top:130px}
         <th class="calc">p<small>kg·m/s</small></th><th class="calc">p′<small>kg·m/s</small></th><th class="calc">ΔE<small>%</small></th>
       </tr></thead><tbody></tbody>
     </table></div>
-    <p class="col-note" style="margin-top:10px">* Unsicher: Wagen 2 fährt nach dem Stoss schnell in die Totzone seines Sensors und ist nur 0,05 bis 0,2 s messbar. Bei Stoss 3 reicht das nicht für einen Fit nach dem Stoss, der Wert stammt noch aus dem Stoss und ist zu klein (aus dem Impuls folgt etwa −0,41 m/s). Bei Stoss 1 ergibt der Wert sogar einen scheinbaren Energiegewinn von 7 %, das liegt innerhalb der Unsicherheit von etwa ±0,03 m/s. Alle anderen Geschwindigkeiten: lineare Fits über 0,3 s, die 0,03 s vor Stossbeginn enden bzw. 0,03 s nach Stossende beginnen.</p>
+    <p class="col-note" style="margin-top:10px">* unsicher: Wagen 2 ist nach dem Stoss nur kurz messbar (Totzone des Sensors).</p>
   </figure>
 </section>
 
@@ -354,10 +353,10 @@ html.in-detail{scroll-padding-top:130px}
 <section id="aufbau" class="tint">
   <div class="col">
     <h2>Der Stoss</h2>
-    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt umrandet läuft die Simulation mit denselben Startwerten mit: beim elastischen Stoss eine ideale Feder wie in unserem Berkeley-Madonna-Modell, beim teilelastischen eine Feder mit Dämpfung, so eingestellt, dass der gemessene Energieverlust herauskommt und beim inelastischen eine Feder bis zur grössten Stauchung, danach kleben die Wagen zusammen. Die Federhärte folgt aus der gemessenen Stossdauer.</span> Mit dem Schalter „Simulation“ unter der Wiedergabe lässt sich das Modell ein- und ausblenden.</p>
+    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt: die Simulation mit denselben Startwerten.</span></p>
     <details class="more">
       <summary>Versuchsaufbau</summary>
-      <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Die x-Achse läuft von Sensor 2 (x = 0) zu Sensor 1 (x ≈ 1,22 m). Wagen 1 startet auf der Seite von Sensor 1 und fährt in −x, also nach links; Wagen 2 steht auf der Seite von Sensor 2. Je nach Messung ruht Wagen 2, oder er fährt in +x auf Wagen 1 zu und beide bewegen sich aufeinander zu (Messungen 4, 8 und 12). Negative Geschwindigkeiten bedeuten Bewegung nach links.</p>
+      <p>Zwei Wagen auf einer Schiene, an jedem Ende ein Ultraschallsensor (LoggerPro, 200 Hz). Beide Wagen tragen denselben Aufsatz: Feder, Schaumstoffkeil oder Klett. Die x-Achse läuft von Sensor 2 (x = 0) zu Sensor 1; Wagen 1 startet bei Sensor 1 und fährt in −x, Wagen 2 ruht oder fährt ihm entgegen.</p>
     </details>
     <details class="more">
       <summary>Theorie: Impulserhaltung</summary>
@@ -393,7 +392,7 @@ html.in-detail{scroll-padding-top:130px}
 <section id="ableitung">
   <div class="col">
     <h2>Von x(t) zu v(t) und a(t)</h2>
-    <p class="lede">Die Sensoren liefern nur den Ort, Geschwindigkeit und Beschleunigung sind daraus abgeleitet. In allen drei Diagrammen sind beide Wagen zu sehen.</p>
+    <p class="lede">Gemessen wird nur der Ort, v(t) und a(t) sind daraus abgeleitet.</p>
     <details class="more">
       <summary>Theorie: Ableitungen und Kraftstoss</summary>
       <div class="formulas">
@@ -454,7 +453,7 @@ html.in-detail{scroll-padding-top:130px}
 <section id="tabellen">
   <div class="col">
     <h2>Tabellen</h2>
-    <p class="lede">Alle Werte der Auswertung auf einen Blick, wie im Bericht. Die Zahlen werden aus denselben Daten berechnet wie der Rest der Seite (data/messungen.csv und die Rohdaten).</p>
+    <p class="lede">Die wichtigsten Werte der Auswertung.</p>
   </div>
   <div class="wide tables" id="tablesBox"><p class="col-note">Tabellen werden berechnet …</p></div>
 </section>
