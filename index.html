@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stösse zweier Wagen</title>
-<meta name="description" content="Zusatzseite zu Praktikum 1 „Stoss“ (Physik 1) von Christian Frey, Mika Hutmacher und Moritz Isser: Messdaten und interaktive Auswertung.">
+<meta name="description" content="Zusatzseite zu Praktikum 2 „Stoss“ (Physik 1) von Christian Frey, Mika Hutmacher und Moritz Isser: Messdaten und interaktive Auswertung.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -317,21 +317,16 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Wagen 1 ist der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
     </details>
     <details class="more">
-      <summary>Theorie: Impulserhaltung und Stosszahl</summary>
+      <summary>Theorie: Impulserhaltung</summary>
       <div class="formulas">
         <div class="f"><span>Impuls</span><div class="formula" data-tex="m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2'"></div></div>
-        <div class="f"><span>Stosszahl</span><div class="formula" data-tex="e = -\frac{v_1' - v_2'}{v_1 - v_2}"></div></div>
         <div class="f"><span>Massenverhältnis</span><div class="formula" data-tex="\frac{m_2}{m_1} = -\frac{v_1' - v_1}{v_2' - v_2}"></div></div>
       </div>
       <div class="types-legend">
-        <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>Feder, e ≈ 1, E<sub>kin</sub> bleibt erhalten</div>
-        <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>Schaumstoffkeil, 0 &lt; e &lt; 1</div>
-        <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>Klett, e = 0, fahren gemeinsam weiter</div>
+        <div class="tl" style="border-color:var(--c-el)"><b>Elastisch</b>Feder, E<sub>kin</sub> bleibt erhalten</div>
+        <div class="tl" style="border-color:var(--c-in)"><b>Teilelastisch</b>Schaumstoffkeil, ein Teil von E<sub>kin</sub> geht verloren</div>
+        <div class="tl" style="border-color:var(--c-vi)"><b>Inelastisch</b>Klett, fahren gemeinsam weiter</div>
       </div>
-    </details>
-    <details class="more">
-      <summary>Annahmen der Wiedergabe</summary>
-      <p>Die Orte sind über 0,15 s geglättet (lokale Parabel), damit nichts zittert. Unter etwa 20 cm messen die Ultraschallsensoren nicht mehr zuverlässig, das zeigen auch unsere Daten; Werte unter 0,20 m sind verworfen. Sobald Wagen 2 nicht mehr gemessen wird, führt die Wiedergabe ihn mit v₂′ aus dem Fit weiter, bis er am Schienenende steht. Die Geschwindigkeiten vorher und nachher stammen aus linearen Fits. Impuls und Energie sind mit den gewogenen Massen gerechnet (leicht 291,9 g, schwer 541,4 g). Das Massenverhältnis m₂/m₁ aus der Impulserhaltung dient nur als Kontrolle: Es sollte nahe beim gewogenen Verhältnis liegen (1,85, 1 oder 0,54).</p>
     </details>
   </div>
   <figure class="wide">
@@ -347,7 +342,6 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <div class="kpis dark black">
       <div class="fig"><div>Wagen 1: v₁ → v₁′</div><strong id="r_v1"></strong></div>
       <div class="fig"><div>Wagen 2: v₂ → v₂′</div><strong id="r_v2"></strong></div>
-      <div class="fig"><div>Stosszahl e</div><strong id="r_e"></strong></div>
       <div class="fig"><div>m₂/m₁ aus der Impulserhaltung</div><strong id="r_ratio"></strong></div>
     </div>
   </figure>
@@ -363,10 +357,6 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
         <div class="f"><span>Ableitungen</span><div class="formula" data-tex="v = \frac{\mathrm dx}{\mathrm dt},\quad a = \frac{\mathrm dv}{\mathrm dt}"></div></div>
         <div class="f"><span>Kraftstoss</span><div class="formula" data-tex="\Delta p = \int F\,\mathrm dt = m \int a\,\mathrm dt = m\,\Delta v"></div></div>
       </div>
-    </details>
-    <details class="more">
-      <summary>Annahmen</summary>
-      <p>Die Ableitungen kommen aus einer Parabel, die in einem Fenster von 0,15 s (31 Messpunkte) an x(t) angepasst wird (Savitzky-Golay). Am Rand eines Messabschnitts, etwa direkt vor der 0,20-m-Grenze, wird das Fenster einseitig in die Messdaten geschoben, damit die Kurven bis zum letzten Messpunkt reichen; dort sind sie etwas unruhiger. Als Stoss gilt die Zeit, in der |a₁| über 10 % seines Maximums liegt. Mit den gewogenen Massen wird daraus die Kraft F = m·a. Der Kraftstoss ∫F dt über den Stoss wird mit der Impulsänderung Δp = m·Δv aus den Fits verglichen, die mittlere Kraft ist F̄ = Δp/Δt.</p>
     </details>
   </div>
   <figure class="wide">
@@ -418,7 +408,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 
 </div>
 </main>
-<footer class="dark black"><div class="foot-in">Physik 1, Praktikum 1 „Stoss“, Christian Frey, Mika Hutmacher, Moritz Isser.</div></footer>
+<footer class="dark black"><div class="foot-in">Physik 1, Praktikum 2 „Stoss“, Christian Frey, Mika Hutmacher, Moritz Isser.</div></footer>
 
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/chart.umd.min.js"></script>

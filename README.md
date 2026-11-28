@@ -1,6 +1,6 @@
 # Stösse zweier Wagen
 
-GitHub-Pages-Seite zu Praktikum 9 „Stoss“ (Physik 1): elastische, teilelastische und inelastische Stösse zweier Wagen, gemessen mit Ultraschallsensoren (LoggerPro, 200 Hz).
+GitHub-Pages-Seite zu Praktikum 2 „Stoss“ (Physik 1): elastische, teilelastische und inelastische Stösse zweier Wagen, gemessen mit Ultraschallsensoren (LoggerPro, 200 Hz).
 
 Seite: https://christiandavidfrey.github.io/physik-stoesse/
 

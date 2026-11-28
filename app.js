@@ -135,6 +135,14 @@ async function loadRaw(run) {
     if (last === null) continue;
     last = Math.max(0.14, last + (ok(run.u2) ? Math.min(lastV, 0) || run.u2 : lastV) * DT); x2f[i] = last;
   }
+  // Wagen 2 darf Wagen 1 nie durchdringen: Abstand der Messpunkte mindestens D.
+  // Inelastisch kleben die Wagen zusammen, Wagen 2 folgt also Wagen 1 im festen Abstand.
+  const inel = run.T && run.T.key === 'inelastisch';
+  for (let i = 0; i < x2f.length; i++) {
+    if (x2[i] !== null || x2f[i] === null) continue;
+    const lim = (s1[i] ?? x1[i]) - D;
+    x2f[i] = inel && t[i] > run.tc ? lim : Math.min(x2f[i], lim);
+  }
   const first = x2f.find(v => v !== null) ?? 0.28;
   for (let i = 0; i < x2f.length && x2f[i] === null; i++) x2f[i] = first;
   const s2f = sg(x2f, SMOOTH, 0), v2f = sg(x2f, SMOOTH, 1);
@@ -198,7 +206,6 @@ function fillSetupFigures() {
   const set = (id, html) => { $(id).innerHTML = html; };
   set('r_v1', `${fmt(r.v1, 2)} <span>→</span> ${fmt(r.u1, 2)}<span class="u">m/s, Wagen 1</span>`);
   set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}<span class="u">m/s, Wagen 2</span>`);
-  set('r_e', `${fmt(Math.max(r.e, 0), 2)}<span class="u sim-only">Modell: ${fmt(eM, 2)}</span>`);
   set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 2)} (${r.aufbau})</span>`);
 }
 document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
@@ -228,7 +235,10 @@ $('sPlay').addEventListener('click', () => playSetup());
     // Sensorwert → Wagenmitte: x2 misst die Heckplatte links, bei Berührung ist x1 − x2 = D
     const off1 = raw.D - C / 2 - gap, c1of = x => x - off1, c2of = x => x + C / 2;
     const t = setupTime(), i = Math.min(raw.t.length - 1, Math.max(0, Math.round(t / DT)));
-    const x1 = raw.s1[i] ?? raw.x1[i], x2 = raw.s2f[i] ?? raw.x2f[i];
+    const x1 = raw.s1[i] ?? raw.x1[i];
+    let x2 = raw.s2f[i] ?? raw.x2f[i];
+    // keine Überlappung: ungemessen mindestens Kontaktabstand, gemessen dürfen nur die Puffer gestaucht werden
+    x2 = Math.min(x2, x1 - raw.D + (raw.x2[i] === null ? 0 : 2 * SIM.buf));
     const p = { c1: c1of(x1), c2: c2of(x2), u1: raw.v1[i] ?? 0, u2: raw.v2f[i] ?? 0 };
     ctx.clearRect(0, 0, W, H);
     // Schiene, Anschläge, Massstab
