@@ -217,7 +217,8 @@ html{scroll-padding-top:90px}
 .dhead .themetog{position:static}
 @media (max-width:640px){.dhead .themetog{display:none}}
 .simtog[aria-pressed="true"]{background:var(--ink);color:var(--raised);border-color:var(--ink)}
-body.no-sim #modell,body.no-sim .sim-only{display:none!important}
+#modell{display:none!important}
+body.no-sim .sim-only{display:none!important}
 @media (max-width:640px){.dhead-in{padding:10px 16px;flex-wrap:wrap}.dhead-t{order:3;flex-basis:100%}.dhead-nav{margin-left:auto}}
 #viewDetail > section:first-of-type{padding-top:110px}
 .masthead{padding-bottom:40px}
@@ -289,7 +290,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 <section id="auswertung" class="dark">
   <div class="col">
     <h2>Stösse</h2>
-    <p class="lede">12 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe, Ableitung und Federmodell; über „Alle Stösse“ geht es zurück.</p>
+    <p class="lede">12 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe und Ableitung; über „Alle Stösse“ geht es zurück.</p>
     <p class="callout" id="massNote" style="display:none"></p>
   </div>
   <figure class="wide">
@@ -393,7 +394,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   </figure>
 </section>
 
-<section id="modell" class="tint">
+<section id="modell" class="tint" hidden><!-- Federmodell-Abschnitt auf Wunsch ausgeblendet; das Modell rechnet weiter für den Umriss in der Wiedergabe -->
   <div class="col">
     <h2>Federmodell</h2>
     <p class="lede">Nachbau unseres Berkeley-Madonna-Modells, gestartet mit Ort und Geschwindigkeit der gewählten Messung.</p>
