@@ -450,19 +450,11 @@ function renderDeriv() {
   }
   const cutTs = cutIdx.map(i => raw.t[i]);
   const iX = cutIdx.length ? cutIdx[0] : -1, tCut = iX > 0 ? raw.t[iX] : NaN;
-  // v2 endet wegen der Glättung etwas früher: dort setzt die gestrichelte Fortsetzung an
-  let iCut = -1;
-  if (iX > 0) for (let i = Math.max(1, iX - 40); i <= iX; i++) if (raw.v2[i] === null && raw.v2[i - 1] !== null) { iCut = i; break; }
-  const ext = [];
-  if (iCut > 0 && ok(run.u2)) {
-    let iEnd = raw.x2f.findIndex((v, i) => i > iCut && v !== null && v <= 0.1401); if (iEnd < 0) iEnd = raw.t.length - 1;
-    const iBack = raw.v2.findIndex((v, i) => i > iCut && v !== null); if (iBack > 0 && iBack < iEnd) iEnd = iBack;
-    const t0 = raw.t[iCut - 1]; ext.push({ x: t0, y: raw.v2[iCut - 1] }, { x: Math.min(t0 + 0.06, raw.t[iEnd]), y: run.u2 }, { x: raw.t[iEnd], y: run.u2 });
-  }
+  const ext = [];   // keine Fortsetzung von v₂ nach der 0,20-m-Grenze (auf Wunsch entfernt)
   const cut = { ts: cutTs, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
   const cutLbl = ['Wagen 2 < 20 cm: nicht gemessen'];
   $('cutNote').hidden = !(iX > 0);
-  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die letzten 0,07 s davor sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer. In v(t) ist danach v₂′ aus dem Fit gestrichelt angenommen.</span>`;
+  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) reichen bis an die Linie; die letzten 0,07 s davor sind mit einem einseitigen Glättungsfenster berechnet und deshalb etwas unsicherer.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
