@@ -64,6 +64,7 @@ function parseRuns(text) {
       m1: num(g(r, 'm1')), m2: num(g(r, 'm2')),
       v1: num(g(r, 'v1')), v2: num(g(r, 'v2')), u1: num(g(r, 'v1_nach')), u2: num(g(r, 'v2_nach')),
       tc: num(g(r, 't_stoss')), note: (g(r, 'bemerkung') || '').trim(),
+      uns: (g(r, 'unsicher') || '').trim().split(/\s+/).filter(Boolean),
     };
     o.e = -(o.u1 - o.u2) / (o.v1 - o.v2);
     o.ratio = -(o.u1 - o.v1) / (o.u2 - o.v2);       // m2/m1, das die Impulserhaltung verlangt
@@ -235,7 +236,7 @@ function fillSetupFigures() {
   const m = ani.model, eM = m ? m.e : NaN;
   const set = (id, html) => { $(id).innerHTML = html; };
   set('r_v1', `${fmt(r.v1, 2)} <span>→</span> ${fmt(r.u1, 2)}<span class="u">m/s, Wagen 1</span>`);
-  set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}<span class="u">m/s, Wagen 2</span>`);
+  set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}${r.uns.includes('v2_nach') ? '*' : ''}<span class="u">m/s, Wagen 2${r.uns.includes('v2_nach') ? ' · * v₂′ unsicher, nach dem Stoss nur kurz messbar' : ''}</span>`);
   set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 2)} (${r.aufbau})</span>`);
 }
 document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
@@ -435,11 +436,12 @@ let ORDER = [];   // Tabellenreihenfolge: nach Stossart, dann Aufbau
 function renderTable() {
   const missing = '<span class="missing">fehlt</span>';
   ORDER = [...RUNS].sort((a, b) => TYPES.indexOf(a.T) - TYPES.indexOf(b.T) || AUFBAU.indexOf(a.aufbau) - AUFBAU.indexOf(b.aufbau) || parseFloat(a.id) - parseFloat(b.id));
+  const U = (r, key, v) => r.uns.includes(key) ? `<span class="uns" title="unsicher: Wagen 2 nach dem Stoss nur kurz messbar">${fmt(v)}*</span>` : fmt(v);
   $('table').querySelector('tbody').innerHTML = TYPES.map(T => {
     const rs = ORDER.filter(r => r.T === T); if (!rs.length) return '';
     return `<tr class="grp"><th colspan="13"><span class="swatch" style="background:var(${T.color})"></span>${T.label}<small>beide Wagen mit ${T.puffer}, ${rs.length} Messungen</small></th></tr>` + rs.map(r => `<tr data-run="${r.id}" tabindex="0" title="Stoss ${r.id} öffnen">
     <td>${r.id}</td><td>${r.aufbau}</td>
-    <td>${fmt(r.v1)}</td><td>${fmt(r.v2)}</td><td>${fmt(r.u1)}</td><td>${fmt(r.u2)}</td>
+    <td>${U(r, 'v1', r.v1)}</td><td>${U(r, 'v2', r.v2)}</td><td>${U(r, 'v1_nach', r.u1)}</td><td>${U(r, 'v2_nach', r.u2)}</td>
     <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
     <td>${ok(r.m1) ? (r.ph ? `<span class="ph">${fmt(r.m1, 4)}*</span>` : fmt(r.m1, 4)) : missing}</td><td>${ok(r.m2) ? (r.ph ? `<span class="ph">${fmt(r.m2, 4)}*</span>` : fmt(r.m2, 4)) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
