@@ -499,7 +499,18 @@ function renderDeriv() {
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3) }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2) }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2) }, scales: { x: xs, y: yAx('a in m/s²', 1) } } });
+  // Kraft F = m·a, Ausschnitt um den Stoss; Stossdauer dezent hinterlegt
+  const fWin = [Math.max(0, raw.lo - 0.3), Math.min(raw.t[raw.t.length - 1], raw.hi + 0.3)];
+  const fData = (arr, m) => arr.map((a, i) => ({ x: raw.t[i], y: a === null ? null : m * a })).filter(p => p.x >= fWin[0] && p.x <= fWin[1]);
+  const band = { id: 'band', beforeDatasetsDraw(ch) { const { ctx, chartArea: A, scales: { x } } = ch; ctx.save(); ctx.fillStyle = css('--rule'); ctx.globalAlpha = .55;
+    ctx.fillRect(x.getPixelForValue(raw.lo), A.top, x.getPixelForValue(raw.hi) - x.getPixelForValue(raw.lo), A.bottom - A.top); ctx.restore(); } };
+  chart('chF', { type: 'line', plugins: [band], data: { datasets: [
+      { label: 'Wagen 1', data: fData(raw.a1, run.m1), borderColor: c1, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 },
+      { label: 'Wagen 2', data: fData(raw.a2, run.m2), borderColor: c2, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('N', 2) },
+      scales: { x: { type: 'linear', min: fWin[0], max: fWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.1, callback: deNum(1) }, title: o.axisTitle('t in s') }, y: yAx('F in N', 1) } } });
+  $('fSub').textContent = `· hinterlegt: Stossdauer ${fmt(raw.hi - raw.lo, 2)} s`;
   // Kraftstoss je Wagen: m · Fläche unter a(t) im Stoss gegen Δp = m·Δv aus den Fits
   const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
   const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
