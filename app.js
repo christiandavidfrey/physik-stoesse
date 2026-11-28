@@ -231,7 +231,6 @@ $('sPlay').addEventListener('click', () => playSetup());
     // Zeit und Stossphase
     ctx.font = font(700, 15); ctx.fillStyle = ink; ctx.textAlign = 'left';
     ctx.fillText(`t = ${fmt(t, 2)} s`, 4, 18);
-    if (t >= raw.lo && t <= raw.hi) { ctx.font = font(700, 13); ctx.fillStyle = muted; ctx.fillText('STOSS', 4, 36); }
     // Ultraschallsensoren: links Sensor 2 (misst Wagen 2), rechts Sensor 1 (misst Wagen 1)
     const plateTop = bodyTop - 40 * k, beam = plateTop + 12 * k, sw = 22 * k, sh = 18 * k;
     ctx.fillStyle = ink2;
@@ -324,11 +323,14 @@ Chart.register(markPlugin);
 const cutPlugin = {
   id: 'cut',
   afterDatasetsDraw(chart, _, o) {
-    if (!o || !ok(o.t)) return;
-    const { ctx, chartArea: a, scales: { x } } = chart, px = x.getPixelForValue(o.t);
-    if (px < a.left || px > a.right) return;
+    if (!o || !o.ts || !o.ts.length) return;
+    const { ctx, chartArea: a, scales: { x } } = chart;
     ctx.save(); ctx.strokeStyle = o.color; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke(); ctx.setLineDash([]);
+    for (const t of o.ts) { const q = x.getPixelForValue(t); if (q < a.left || q > a.right) continue; ctx.beginPath(); ctx.moveTo(q, a.top); ctx.lineTo(q, a.bottom); ctx.stroke(); }
+    ctx.setLineDash([]); ctx.restore();
+    const px = x.getPixelForValue(o.ts[0]);
+    if (px < a.left || px > a.right) return;
+    ctx.save();
     if (o.label) {
       ctx.font = '600 13px Calibri, Carlito, sans-serif'; ctx.textBaseline = 'top';
       const lines = o.label, w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * 16 + 8;
@@ -420,7 +422,6 @@ function renderDeriv() {
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2');
   const inWin = arr => arr.map((y, i) => ({ x: raw.t[i], y })).filter(p => p.x >= dWin[0] - 1e-9 && p.x <= dWin[1] + 1e-9);
   const xs = { type: 'linear', min: dWin[0], max: dWin[1], grid: o.grid, ticks: { ...o.ticks, stepSize: 0.5, callback: deNum(1) } };
-  const band = { band: [raw.lo, raw.hi], fill: css('--rule') + '88', text: css('--muted') };
   const tip = (unit, d) => ({ ...o.tooltip, callbacks: { title: i => `t = ${fmt(i[0].raw.x, 3)} s`, label: i => `${i.dataset.label}: ${fmt(i.raw.y, d)} ${unit}` } });
   const common = { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
   const yAx = (title, d, extra = {}) => ({ afterFit: ax => { ax.width = 64; }, grace: '8%', grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title), ...extra });
@@ -428,26 +429,34 @@ function renderDeriv() {
   const pts = (label, arr, col) => ({ label, data: inWin(arr), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.6, pointHoverRadius: 3 });
   const ln = (label, arr, col) => ({ label, data: inWin(arr), borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 });
   // Ab wann fehlt v2, weil Wagen 2 unter 0,20 m ist? (erster Übergang Wert → leer nach dem Stossbeginn)
+  // Senkrechte Linien genau dort, wo der gemessene Ort x2 unter 0,20 m fällt (mind. 0,05 s lang darunter)
+  const cutIdx = [];
+  for (let i = 1; i < raw.x2.length; i++) if (raw.x2[i] === null && raw.x2[i - 1] !== null) {
+    let k = i; while (k < raw.x2.length && raw.x2[k] === null) k++;
+    if (k - i >= 10) cutIdx.push(i);
+  }
+  const cutTs = cutIdx.map(i => raw.t[i]);
+  const iX = cutIdx.length ? cutIdx[0] : -1, tCut = iX > 0 ? raw.t[iX] : NaN;
+  // v2 endet wegen der Glättung etwas früher: dort setzt die gestrichelte Fortsetzung an
   let iCut = -1;
-  for (let i = Math.max(1, Math.round((raw.lo - 0.3) / DT)); i < raw.v2.length; i++) if (raw.v2[i] === null && raw.v2[i - 1] !== null) { iCut = i; break; }
-  const tCut = iCut > 0 ? raw.t[iCut] : NaN;
+  if (iX > 0) for (let i = Math.max(1, iX - 40); i <= iX; i++) if (raw.v2[i] === null && raw.v2[i - 1] !== null) { iCut = i; break; }
   const ext = [];
   if (iCut > 0 && ok(run.u2)) {
     let iEnd = raw.x2f.findIndex((v, i) => i > iCut && v !== null && v <= 0.1401); if (iEnd < 0) iEnd = raw.t.length - 1;
     const iBack = raw.v2.findIndex((v, i) => i > iCut && v !== null); if (iBack > 0 && iBack < iEnd) iEnd = iBack;
-    ext.push({ x: tCut, y: raw.v2[iCut - 1] }, { x: Math.min(tCut + 0.06, raw.t[iEnd]), y: run.u2 }, { x: raw.t[iEnd], y: run.u2 });
+    const t0 = raw.t[iCut - 1]; ext.push({ x: t0, y: raw.v2[iCut - 1] }, { x: Math.min(t0 + 0.06, raw.t[iEnd]), y: run.u2 }, { x: raw.t[iEnd], y: run.u2 });
   }
-  const cut = { t: tCut, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
+  const cut = { ts: cutTs, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
   const cutLbl = ['Wagen 2 < 20 cm: nicht gemessen'];
-  $('cutNote').hidden = !(iCut > 0);
-  if (iCut > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Ab der gestrichelten senkrechten Linie bei t = ${fmt(tCut, 2)} s ist Wagen 2 näher als 20 cm an seinem Sensor und wird nicht mehr gemessen. Deshalb enden dort seine Kurven in x(t), v(t) und a(t). In v(t) ist danach v₂′ aus dem Fit gestrichelt angenommen.</span>`;
+  $('cutNote').hidden = !(iX > 0);
+  if (iX > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Die gestrichelten senkrechten Linien liegen genau dort, wo der gemessene Ort von Wagen 2 unter 0,20 m fällt${cutTs.length > 1 ? ` (bei t = ${cutTs.map(t => fmt(t, 2)).join(' s und ')} s)` : ` (bei t = ${fmt(tCut, 2)} s)`}. Näher als 20 cm am Sensor wird nicht gemessen. v(t) und a(t) enden etwas früher, weil sie über 0,15 s geglättet werden und dafür Messpunkte auf beiden Seiten brauchen. In v(t) ist danach v₂′ aus dem Fit gestrichelt angenommen.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band, zone, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), zone, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band, cut }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), cut }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), mark: band, cut }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), cut }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
   // Kraftstoss je Wagen: m · Fläche unter a(t) im Stoss gegen Δp = m·Δv aus den Fits
   const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
   const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
@@ -455,7 +464,7 @@ function renderDeriv() {
   const dt = raw.hi - raw.lo, M = run.hasMass;
   const cell = (k, J, dv, m) => `<div class="fig"><div>${k}</div>${ok(J) ? (M ? `<strong>${fmt(m * J, 3)} N·s</strong><small>Δp aus Fits ${fmt(m * dv, 3)} kg·m/s</small>` : `<strong>${fmt(J)} m/s</strong><small>Δv aus Fits ${fmt(dv)} m/s</small>`) : `<strong>–</strong><small>im Stoss teils nicht messbar (unter 0,20 m)</small>`}</div>`;
   $('dFigures').innerHTML = cell('Kraftstoss ∫F dt, Wagen 1', J1, run.u1 - run.v1, run.m1) + cell('Kraftstoss ∫F dt, Wagen 2', J2, run.u2 - run.v2, run.m2)
-    + `<div class="fig"><div>Stossdauer Δt</div><strong>${fmt(dt, 2)} s</strong><small>grau hinterlegt</small></div>`
+    + `<div class="fig"><div>Stossdauer Δt</div><strong>${fmt(dt, 2)} s</strong><small>solange |a₁| über 10 % des Maximums</small></div>`
     + (M ? `<div class="fig"><div>Mittlere Kraft F̄ = Δp₁/Δt</div><strong>${fmt(Math.abs(run.m1 * (run.u1 - run.v1)) / dt, 2)} N</strong><small>grösste Kraft ${fmt(Math.abs(run.m1 * raw.amax), 2)} N (Wagen 1)</small></div>`
          : `<div class="fig"><div>Grösste Beschleunigung Wagen 1</div><strong>${fmt(Math.abs(raw.amax), 1)} m/s²</strong><small>im Stoss</small></div>`);
 }

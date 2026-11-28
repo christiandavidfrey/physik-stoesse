@@ -342,14 +342,13 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <button class="btn" id="backBtn">← Alle Stösse</button>
     <div class="dhead-t"><b id="dhTitle"></b><span id="dhInfo"></span></div>
     <button class="btn themetog" type="button" aria-label="Hell oder dunkel umschalten"></button>
-    <button class="btn simtog" id="simBtn" data-sim aria-pressed="true" title="Federmodell in der Wiedergabe und im Abschnitt Federmodell ein- oder ausblenden">Simulation: ein</button>
     <div class="dhead-nav"><button class="btn" id="prevBtn" aria-label="Vorheriger Stoss"></button><button class="btn" id="nextBtn" aria-label="Nächster Stoss"></button></div>
   </div>
 </nav>
 <section id="aufbau" class="tint">
   <div class="col">
     <h2>Der Stoss</h2>
-    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</span> Mit dem Schalter „Simulation“ oben lässt sich das Modell ein- und ausblenden.</p>
+    <p class="lede">Der gewählte Stoss, abgespielt aus den geglätteten Messwerten. <span class="sim-only">Gestrichelt umrandet läuft mit, was unser Berkeley-Madonna-Federmodell mit denselben Startwerten vorhersagt.</span> Mit dem Schalter „Simulation“ unter der Wiedergabe lässt sich das Modell ein- und ausblenden.</p>
     <details class="more">
       <summary>Versuchsaufbau</summary>
       <p>Zwei Wagen auf einer Schiene. Jeder Wagen hat am Heck eine Platte, die nach oben ragt; an jedem Schienenende misst ein Ultraschallsensor den Abstand zu einer dieser Platten (LoggerPro, 200 Hz). Beide Wagen tragen immer denselben Aufsatz: elastisch beide eine Feder, teilelastisch beide einen Schaumstoffkeil, inelastisch beide Klett. Wagen 1 ist der stossende Wagen und fährt in −x, Wagen 2 der gestossene.</p>
@@ -417,7 +416,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <div class="slabel">Geschwindigkeit v(t)</div><div class="box" style="height:210px"><canvas id="chV" role="img" aria-label="Geschwindigkeit beider Wagen gegen Zeit"></canvas></div>
       <div class="slabel">Beschleunigung a(t)</div><div class="box" style="height:210px"><canvas id="chA" role="img" aria-label="Beschleunigung beider Wagen gegen Zeit"></canvas></div>
     </div>
-    <figcaption class="col-note">Schwarz Wagen 1, grau Wagen 2. Punkte: Rohdaten, Linien: geglättete Ableitungen (0,15 s). Grau hinterlegt ist der Stoss, die Fläche unter a(t) dort entspricht Δv. Schraffiert: unter 0,20 m messen die Sensoren nicht, dort enden die Kurven von Wagen 2. Die gestrichelte Linie markiert diesen Punkt; danach ist v₂ nicht gemessen, sondern mit v₂′ aus dem Fit angenommen.</figcaption>
+    <figcaption class="col-note">Schwarz Wagen 1, grau Wagen 2. Punkte: Rohdaten, Linien: geglättete Ableitungen (0,15 s). Schraffiert: unter 0,20 m messen die Sensoren nicht, dort enden die Kurven von Wagen 2. Die gestrichelte Linie markiert diesen Punkt; danach ist v₂ nicht gemessen, sondern mit v₂′ aus dem Fit angenommen.</figcaption>
   </figure>
 </section>
 
