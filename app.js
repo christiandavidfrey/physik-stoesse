@@ -238,7 +238,7 @@ function fillSetupFigures() {
   const set = (id, html) => { $(id).innerHTML = html; };
   set('r_v1', `${fmt(r.v1, 2)} <span>→</span> ${fmt(r.u1, 2)}<span class="u">m/s, Wagen 1</span>`);
   set('r_v2', `${fmt(r.v2, 2)} <span>→</span> ${fmt(r.u2, 2)}<span class="u">m/s, Wagen 2</span>`);
-  set('r_ratio', `${fmt(r.ratio, 2)}<span class="u">erwartet ${fmt(EXPECTED_RATIO[r.aufbau], 2)} (${r.aufbau})</span>`);
+  set('r_p', `${fmt(r.p0)} <span>→</span> ${fmt(r.p1)}<span class="u">kg·m/s, beide Wagen</span>`);
 }
 document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
   ani.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', x === b)); if (ani.playing) playSetup();
