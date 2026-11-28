@@ -448,14 +448,16 @@ function renderDeriv() {
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band, cut }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), mark: band, cut }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
-  // Kraftstoss pro Masse je Wagen: Fläche unter a(t) im Stoss gegen Δv aus den Fits
+  // Kraftstoss je Wagen: m · Fläche unter a(t) im Stoss gegen Δp = m·Δv aus den Fits
   const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
   const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
   const J1 = area(raw.a1), J2 = area(raw.a2);
-  const cell = (k, J, dv) => `<div class="fig"><div>${k}</div>${ok(J) ? `<strong>${fmt(J)} m/s</strong><small>Δv aus Fits ${fmt(dv)} m/s</small>` : `<strong>–</strong><small>im Stoss teils nicht messbar (unter 0,20 m)</small>`}</div>`;
-  $('dFigures').innerHTML = cell('Wagen 1: Fläche unter a(t) im Stoss', J1, run.u1 - run.v1) + cell('Wagen 2: Fläche unter a(t) im Stoss', J2, run.u2 - run.v2)
-    + `<div class="fig"><div>Stossdauer</div><strong>${fmt(raw.hi - raw.lo, 2)} s</strong><small>grau hinterlegt</small></div>`
-    + `<div class="fig"><div>Grösste Beschleunigung Wagen 1</div><strong>${fmt(Math.abs(raw.amax), 1)} m/s²</strong><small>im Stoss</small></div>`;
+  const dt = raw.hi - raw.lo, M = run.hasMass;
+  const cell = (k, J, dv, m) => `<div class="fig"><div>${k}</div>${ok(J) ? (M ? `<strong>${fmt(m * J, 3)} N·s</strong><small>Δp aus Fits ${fmt(m * dv, 3)} kg·m/s</small>` : `<strong>${fmt(J)} m/s</strong><small>Δv aus Fits ${fmt(dv)} m/s</small>`) : `<strong>–</strong><small>im Stoss teils nicht messbar (unter 0,20 m)</small>`}</div>`;
+  $('dFigures').innerHTML = cell('Kraftstoss ∫F dt, Wagen 1', J1, run.u1 - run.v1, run.m1) + cell('Kraftstoss ∫F dt, Wagen 2', J2, run.u2 - run.v2, run.m2)
+    + `<div class="fig"><div>Stossdauer Δt</div><strong>${fmt(dt, 2)} s</strong><small>grau hinterlegt</small></div>`
+    + (M ? `<div class="fig"><div>Mittlere Kraft F̄ = Δp₁/Δt</div><strong>${fmt(Math.abs(run.m1 * (run.u1 - run.v1)) / dt, 2)} N</strong><small>grösste Kraft ${fmt(Math.abs(run.m1 * raw.amax), 2)} N (Wagen 1)</small></div>`
+         : `<div class="fig"><div>Grösste Beschleunigung Wagen 1</div><strong>${fmt(Math.abs(raw.amax), 1)} m/s²</strong><small>im Stoss</small></div>`);
 }
 
 // ===================== Federmodell =====================

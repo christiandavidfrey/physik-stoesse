@@ -31,7 +31,7 @@ Die Massen stehen nur an **einer** Stelle: in `data/messungen.csv`, Spalten `m1`
 
 Gewogene Massen (`m_quelle = gewogen`): leicht 0,2919 kg (Wagen ohne Zusatzgewicht), schwer 0,5414 kg (Wagen + 2 Zusatzgewichte à 125,2 g). Bei den Messungen mit gleichen Massen (3, 4, 7, 8, 11, 12) sind beide Wagen leicht angenommen.
 
-Solange die Felder leer sind, zeigt die Seite „fehlt“. Sobald sie ausgefüllt sind, erscheinen automatisch Impuls p und p′, Energieänderung ΔE, mittlere Kraft, Kraftstoss ∫F dt im Vergleich mit Δp₁, das Impulsdiagramm, und das Federmodell übernimmt die echten Massen.
+Mit den Massen berechnet die Seite Impuls p und p′, Energieänderung ΔE, mittlere Kraft, Kraftstoss ∫F dt im Vergleich mit Δp₁, und das Federmodell übernimmt die echten Massen.
 
 ## Spalten von `data/messungen.csv`
 

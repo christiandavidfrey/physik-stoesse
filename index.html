@@ -243,7 +243,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   <p class="kicker">Physik 1, Praktikum 9 „Stoss“</p>
   <h1>Stösse zweier Wagen</h1>
   <p class="deck">Zusatz zum Bericht: alle 12 Messungen, interaktiv ausgewertet. Wähle einen Stoss aus der Tabelle: er wird abgespielt, aus x(t) werden v und a abgeleitet, und das Federmodell zeigt, was es für denselben Stoss vorhersagt.</p>
-  <p class="meta">Messungen <b>12</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact">Massen <b>fehlen noch</b></span></p>
+  <p class="meta">Messungen <b>12</b><span>Abtastrate <b>200 Hz</b></span><span>Dauer <b>5 s</b></span><span>Ultraschall, <b>LoggerPro</b></span><span class="warn" id="massFact" style="display:none"></span></p>
 </div></header>
 
 
@@ -287,7 +287,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
   <div class="col">
     <h2>Stösse</h2>
     <p class="lede">12 Messungen: drei Stossarten mit je vier Aufbauten, leicht stösst schwer, schwer stösst leicht, gleich schwer mit ruhendem Wagen, gleich schwer gegeneinander. Einen Stoss anklicken öffnet ihn mit Wiedergabe, Ableitung und Federmodell; über „Alle Stösse“ geht es zurück.</p>
-    <p class="callout" id="massNote"><b>Massen fehlen noch.</b> Impuls, Energie und Kraft erscheinen automatisch, sobald m₁ und m₂ in <code>data/messungen.csv</code> stehen.</p>
+    <p class="callout" id="massNote" style="display:none"></p>
   </div>
   <figure class="wide">
     <div class="tablewrap"><table id="table">
@@ -339,7 +339,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     </details>
     <details class="more">
       <summary>Annahmen der Wiedergabe</summary>
-      <p>Die Orte sind über 0,15 s geglättet (lokale Parabel), damit nichts zittert. Unter etwa 20 cm messen die Ultraschallsensoren nicht mehr zuverlässig, das zeigen auch unsere Daten; Werte unter 0,20 m sind verworfen. In der Wiedergabe wird Wagen 2 mit seiner letzten Geschwindigkeit weitergeführt und bleibt am Schienenende stehen. Die Geschwindigkeiten vorher und nachher stammen aus linearen Fits. Das Massenverhältnis folgt allein aus der Impulserhaltung, ohne gewogene Massen.</p>
+      <p>Die Orte sind über 0,15 s geglättet (lokale Parabel), damit nichts zittert. Unter etwa 20 cm messen die Ultraschallsensoren nicht mehr zuverlässig, das zeigen auch unsere Daten; Werte unter 0,20 m sind verworfen. Sobald Wagen 2 nicht mehr gemessen wird, führt die Wiedergabe ihn mit v₂′ aus dem Fit weiter, bis er am Schienenende steht (in v(t) gestrichelt). Die Geschwindigkeiten vorher und nachher stammen aus linearen Fits. Impuls und Energie sind mit den gewogenen Massen gerechnet (leicht 291,9 g, schwer 541,4 g). Das Massenverhältnis m₂/m₁ aus der Impulserhaltung dient nur als Kontrolle: Es sollte nahe beim gewogenen Verhältnis liegen (1,85, 1 oder 0,54).</p>
     </details>
   </div>
   <figure class="wide">
@@ -374,7 +374,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     </details>
     <details class="more">
       <summary>Annahmen</summary>
-      <p>Die Ableitungen kommen aus einer Parabel, die in einem Fenster von 0,15 s (31 Messpunkte) an x(t) angepasst wird (Savitzky-Golay). Als Stoss gilt die Zeit, in der |a₁| über 10 % seines Maximums liegt. Ohne Massen lässt sich der Kraftstoss nur pro Masse prüfen: die Fläche unter a(t) muss Δv aus den Fits ergeben.</p>
+      <p>Die Ableitungen kommen aus einer Parabel, die in einem Fenster von 0,15 s (31 Messpunkte) an x(t) angepasst wird (Savitzky-Golay). Als Stoss gilt die Zeit, in der |a₁| über 10 % seines Maximums liegt. Mit den gewogenen Massen wird daraus die Kraft F = m·a. Der Kraftstoss ∫F dt über den Stoss wird mit der Impulsänderung Δp = m·Δv aus den Fits verglichen, die mittlere Kraft ist F̄ = Δp/Δt.</p>
     </details>
   </div>
   <figure class="wide">
@@ -414,7 +414,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.05" max="0.8" step="0.0001" value="0.2919"></label>
       <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.05" max="0.8" step="0.0001" value="0.5414"></label>
     </div>
-    <p class="note missing" id="modelMassNote">Massen angenommen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
+    <p class="note missing" id="modelMassNote" style="display:none"></p>
     <p class="callout" id="modelE"></p>
     <div class="charts2">
       <div><div class="slabel">Ort: Modell und Messung</div><div class="legend" id="lgMX"></div><div class="box" style="height:300px"><canvas id="chMX" role="img" aria-label="Modell und Messung, Ort gegen Zeit"></canvas></div></div>
