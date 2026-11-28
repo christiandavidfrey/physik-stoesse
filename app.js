@@ -320,6 +320,29 @@ const markPlugin = {
 };
 Chart.register(markPlugin);
 
+// Markiert, ab wann Wagen 2 näher als 20 cm am Sensor ist und nicht mehr gemessen wird
+const cutPlugin = {
+  id: 'cut',
+  afterDatasetsDraw(chart, _, o) {
+    if (!o || !ok(o.t)) return;
+    const { ctx, chartArea: a, scales: { x } } = chart, px = x.getPixelForValue(o.t);
+    if (px < a.left || px > a.right) return;
+    ctx.save(); ctx.strokeStyle = o.color; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke(); ctx.setLineDash([]);
+    if (o.label) {
+      ctx.font = '600 13px Calibri, Carlito, sans-serif'; ctx.textBaseline = 'top';
+      const lines = o.label, w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * 16 + 8;
+      const right = px + 6 + w < a.right, bx = right ? px + 6 : px - 6 - w, by = a.top + 2;
+      ctx.fillStyle = o.bg; ctx.strokeStyle = o.color; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(bx, by, w, h, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = o.text; ctx.textAlign = 'left';
+      lines.forEach((l, i) => { ctx.font = (i ? '400 ' : '700 ') + '13px Calibri, Carlito, sans-serif'; ctx.fillText(l, bx + 7, by + 5 + i * 16); });
+    }
+    ctx.restore();
+  },
+};
+Chart.register(cutPlugin);
+
 // Schraffiert den Bereich unter 0,20 m: dort messen die Ultraschallsensoren nicht mehr
 const zonePlugin = {
   id: 'zone',
@@ -402,15 +425,27 @@ function renderDeriv() {
   const common = { maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
   const yAx = (title, d, extra = {}) => ({ afterFit: ax => { ax.width = 64; }, grace: '8%', grid: o.grid, ticks: { ...o.ticks, callback: deNum(d) }, border: { display: false }, title: o.axisTitle(title), ...extra });
   const zone = { below: X2_MIN + 0.001, color: css('--rule'), text: css('--muted') };
-  legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']]);
   const pts = (label, arr, col) => ({ label, data: inWin(arr), backgroundColor: col + 'aa', borderWidth: 0, pointRadius: 1.6, pointHoverRadius: 3 });
   const ln = (label, arr, col) => ({ label, data: inWin(arr), borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 });
+  // Ab wann fehlt v2, weil Wagen 2 unter 0,20 m ist? (erster Übergang Wert → leer nach dem Stossbeginn)
+  let iCut = -1;
+  for (let i = Math.max(1, Math.round((raw.lo - 0.3) / DT)); i < raw.v2.length; i++) if (raw.v2[i] === null && raw.v2[i - 1] !== null) { iCut = i; break; }
+  const tCut = iCut > 0 ? raw.t[iCut] : NaN;
+  const ext = [];
+  if (iCut > 0 && ok(run.u2)) {
+    let iEnd = raw.x2f.findIndex((v, i) => i > iCut && v !== null && v <= 0.1401); if (iEnd < 0) iEnd = raw.t.length - 1;
+    const iBack = raw.v2.findIndex((v, i) => i > iCut && v !== null); if (iBack > 0 && iBack < iEnd) iEnd = iBack;
+    ext.push({ x: tCut, y: raw.v2[iCut - 1] }, { x: Math.min(tCut + 0.06, raw.t[iEnd]), y: run.u2 }, { x: raw.t[iEnd], y: run.u2 });
+  }
+  const cut = { t: tCut, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
+  const cutLbl = ['ab hier Wagen 2 < 20 cm vom Sensor: nicht gemessen'];
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band, zone }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
-  chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band, zone, cut }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
+  legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
+  chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), mark: band }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), mark: band, cut }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
   // Kraftstoss pro Masse je Wagen: Fläche unter a(t) im Stoss gegen Δv aus den Fits
   const lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
   const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
