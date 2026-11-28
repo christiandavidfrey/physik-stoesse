@@ -605,6 +605,9 @@ function openRun(id) { history.pushState(null, '', '#m' + id); route(true); }
 function showTable() { history.pushState(null, '', location.pathname + location.search); route(true); }
 function route(nav) {
   const id = (location.hash.match(/^#m([\d.]+)$/) || [])[1], run = RUNS.find(r => r.id === id);
+  const tabs = !run && location.hash === '#tabellen';
+  $('viewTables').hidden = !tabs;
+  if (tabs) { $('viewOverview').hidden = true; $('viewDetail').hidden = true; ani.playing = false; document.documentElement.classList.remove('in-detail'); renderTables(); $('tabellen').scrollIntoView({ block: 'start' }); return; }
   $('viewOverview').hidden = !!run; $('viewDetail').hidden = !run;
   document.documentElement.classList.toggle('in-detail', !!run);
   if (run) {
@@ -622,7 +625,8 @@ addEventListener('popstate', () => route(true));
 // Kopfleiste: Home und Sprungmarken, auch aus der Einzelansicht heraus
 document.querySelectorAll('.topbar [data-nav]').forEach(el => el.addEventListener('click', ev => {
   ev.preventDefault();
-  if (!$('viewDetail').hidden) { history.pushState(null, '', location.pathname + location.search); route(false); }
+  if (el.dataset.nav === 'tabellen') { if (location.hash !== '#tabellen') history.pushState(null, '', '#tabellen'); route(true); return; }
+  if ($('viewOverview').hidden) { history.pushState(null, '', location.pathname + location.search); route(false); }
   const id = el.dataset.nav, target = id === 'top' ? null : document.getElementById(id);
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else scrollTo({ top: 0, behavior: 'smooth' });
 }));
@@ -678,3 +682,64 @@ fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error
   update();
 })();
 
+
+// ===================== Tabellen (wie im Bericht) =====================
+let tablesDone = false;
+async function renderTables() {
+  if (tablesDone) return;
+  const runs = RUNS.slice().sort((p, q) => +p.id - +q.id);
+  const raws = {}; for (const r of runs) raws[r.id] = await loadRaw(r);
+  const f = (x, d = 3) => ok(x) ? fmt(x, d) : '–', pc = x => ok(x) ? `${x > 0 ? '+' : ''}${fmt(x, 0)} %` : '–';
+  const U = (r, key, v) => r.uns.includes(key) ? `<span class="uns">${f(v)}*</span>` : f(v);
+  const tbl = (id, title, cap, head, rows, note = '', cls = '') => `<div class="tblock" id="${id}"><h3>${title}</h3><p class="tcap">${cap}</p><div class="tablewrap"><table class="${cls}"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${note ? `<p class="tnote">${note}</p>` : ''}</div>`;
+  const base = r => [r.id, r.T.label, r.aufbau];
+  const gaps = (arr, t) => { const g = []; let i = 0;
+    while (i < arr.length) { if (arr[i] !== null) { i++; continue; } let k = i; while (k < arr.length && arr[k] === null) k++;
+      if (k - i >= 10) { const prev = g[g.length - 1]; if (prev && i - prev[1] < 60) prev[1] = k - 1; else g.push([i, k - 1]); } i = k; }
+    return g.map(([p, q]) => `${fmt(t[p], 2)} – ${fmt(t[q], 2)} s`).join('; ') || '–'; };
+  const H = [];
+  H.push(tbl('tA', 'Tabelle A: Massen und Geschwindigkeiten', 'Lineare Fits an die Rohdaten über 0,3 s, die 0,03 s vor dem Stossbeginn enden bzw. 0,03 s nach dem Stossende beginnen. v vor, u nach dem Stoss, in m/s.',
+    ['Nr.', 'Stossart', 'Aufbau', 'm₁ / g', 'm₂ / g', 'v₁', 'v₂', 'u₁', 'u₂'],
+    runs.map(r => [...base(r), f(r.m1 * 1000, 1), f(r.m2 * 1000, 1), U(r, 'v1', r.v1), U(r, 'v2', r.v2), U(r, 'v1_nach', r.u1), U(r, 'v2_nach', r.u2)]),
+    '* unsicher: Wagen 2 ist nach dem Stoss weniger als 0,2 s messbar. In Stoss 3 liegt das Fenster noch im Stoss, der Wert ist zu klein.'));
+  H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls p = m₁v₁ + m₂v₂ in g·m/s. Bei Gesamtimpuls nahe null ist eine Prozentangabe nicht sinnvoll.',
+    ['Nr.', 'Stossart', 'Aufbau', 'p vor', 'p nach', 'Δp', 'relativ'],
+    runs.map(r => [...base(r), f(r.p0 * 1000, 1), f(r.p1 * 1000, 1), f((r.p1 - r.p0) * 1000, 1), Math.abs(r.p0) > 0.03 ? pc((r.p1 - r.p0) / Math.abs(r.p0) * 100) : '(p ≈ 0)'])));
+  H.push(tbl('tC', 'Tabelle C: Kinetische Energie vor und nach dem Stoss', 'E = ½m₁v₁² + ½m₂v₂² in mJ.',
+    ['Nr.', 'Stossart', 'Aufbau', 'E vor', 'E nach', 'ΔE', 'relativ'],
+    runs.map(r => [...base(r), f(r.E0 * 1000, 1), f(r.E1 * 1000, 1), f((r.E1 - r.E0) * 1000, 1), pc(r.dE)])));
+  H.push(tbl('tD', 'Tabelle D: Kraftstoss, Stossdauer und Kraft', 'Kraftstoss ∫F dt = m∫a dt über die Stossdauer (|a₁| über 10 % des Maximums) im Vergleich zur Impulsänderung Δp = m(u − v) aus den Fits.',
+    ['Nr.', 'Stossart', 'Aufbau', '∫F₁ dt / N·s', 'Δp₁ / kg·m/s', 'Abw.', '∫F₂ dt / N·s', 'Δp₂ / kg·m/s', 'Δt / s', 'F̄ / N', 'F_max / N'],
+    runs.map(r => { const raw = raws[r.id], lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
+      const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
+      const J1 = r.m1 * area(raw.a1), J2 = r.m2 * area(raw.a2), d1 = r.m1 * (r.u1 - r.v1), d2 = r.m2 * (r.u2 - r.v2), dt = raw.hi - raw.lo;
+      return [...base(r), f(J1), f(d1), pc((J1 - d1) / Math.abs(d1) * 100), f(J2), f(d2), f(dt, 2), f(Math.abs(d1) / dt, 2), f(Math.abs(r.m1 * raw.amax), 2)]; })));
+  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Elastisch: u aus Impuls- und Energieerhaltung. Inelastisch: gemeinsame Geschwindigkeit v_s = (m₁v₁ + m₂v₂)/(m₁ + m₂). Stosszahl k = (u₂ − u₁)/(v₁ − v₂).',
+    ['Nr.', 'Stossart', 'Aufbau', 'u₁ gemessen', 'u₁ Theorie', 'u₂ gemessen', 'u₂ Theorie', 'Stosszahl k'],
+    runs.map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
+      if (r.T.key === 'elastisch') { t1 = (P - r.m2 * (r.v1 - r.v2)) / M; t2 = (P + r.m1 * (r.v1 - r.v2)) / M; } else if (r.T.key === 'inelastisch') t1 = t2 = P / M;
+      const k = (r.u2 - r.u1) / (r.v1 - r.v2);
+      return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2), fmt(Math.abs(k) < 0.005 ? 0 : k, 2)]; })));
+  H.push(tbl('tF', 'Tabelle F: Totzone der Sensoren', 'Zeitabschnitte, in denen ein Wagen näher als etwa 20 cm an seinem Sensor war (Sensor 2 zeigt dann fest 0,196 m, Sensor 1 fest 1,023 m). Diese Werte sind verworfen.',
+    ['Nr.', 'Stossart', 'Aufbau', 'Wagen 2 nicht messbar', 'Wagen 1 nicht messbar'],
+    runs.map(r => { const raw = raws[r.id]; return [...base(r), gaps(raw.x2, raw.t), gaps(raw.x1, raw.t)]; })));
+  H.push(tbl('tG', 'Tabelle G: Messzeit von Wagen 2 nach dem Stoss', 'Wie lange Wagen 2 nach dem Stossende noch gemessen wird, bevor er in die Totzone seines Sensors fährt. Unter etwa 0,2 s ist u₂ unsicher.',
+    ['Nr.', 'Stossart', 'Aufbau', 'Stossende', 'Wagen 2 in Totzone ab', 'messbare Zeit'],
+    runs.map(r => { const raw = raws[r.id], hi = Math.round(raw.hi / DT); let j = hi; while (j < raw.x2.length && raw.x2[j] !== null) j++;
+      const end = j < raw.x2.length ? raw.t[j] : NaN; return [...base(r), `${fmt(raw.hi, 2)} s`, ok(end) ? `${fmt(end, 2)} s` : 'bis Messende', ok(end) ? `${fmt(end - raw.hi, 2)} s` : `> ${fmt(raw.t[raw.t.length - 1] - raw.hi, 1)} s`]; })));
+  H.push(tbl('tH', 'Tabelle H: Stoss 3, u₂ je nach Fitbeginn', 'Wagen 2 ist nur bis 1,645 s messbar, der Federkontakt dauert bis 1,60 s. Je später der Fit beginnt, desto grösser der Betrag; aus der Impulserhaltung folgen −0,416 m/s.',
+    ['Fitbeginn', 'Punkte', 'u₂ / m/s'], [['1,40 s', '51', '−0,341'], ['1,46 s', '39', '−0,367'], ['1,50 s', '31', '−0,378'], ['1,55 s', '21', '−0,395'], ['1,60 s (Stossende)', '11', '−0,313 (zu wenig Punkte)']], '', 'left'));
+  H.push(tbl('tI', 'Tabelle I: Fehlerquellen', 'Übersicht der Fehlerquellen und ihrer Auswirkung.',
+    ['Fehlerquelle', 'betroffen', 'Auswirkung'], [
+      ['Sensorrauschen (0,5 bis 2 mm)', 'alle', 'v ± 0,002 bis 0,005 m/s, vernachlässigbar'],
+      ['Totzone der Sensoren (Grenzwerte 0,196 / 1,023 m)', 'alle', 'Daten fehlen; ohne Korrektur scheinbarer Stillstand'],
+      ['Kurze Messzeit von Wagen 2 nach dem Stoss', '1, 2, 3, 11 (stark: 1, 3)', 'u₂ unsicher (Stoss 3: 12 % zu klein, Stoss 1: eher zu gross)'],
+      ['Fitfenster reichte in den Stoss', '1, 2, 4, 8, 10, 12 (korrigiert); 3 (nicht korrigierbar)', 'Geschwindigkeiten bis 16 % zu klein'],
+      ['Reibung, Schienenneigung', 'alle', 'Impulsverlust von einigen Prozent'],
+      ['Gesamtimpuls ≈ 0', '4, 8, 12', 'Prozentangaben nicht sinnvoll'],
+      ['Massenannahme bei gleichen Massen', '3, 4, 7, 8, 11, 12', 'absolute Werte unsicher, Verhältnisse nicht'],
+      ['Glättung, Schwelle für Δt', 'alle (stark: inelastisch, 6, 10)', 'F_max und F̄ unsicher, ∫F dt kaum'],
+      ['Abprallen am Schienenende, zweiter Stoss', '1, 3, 11', 'kein Einfluss auf die Auswertung']], '', 'left'));
+  $('tablesBox').innerHTML = H.join('');
+  tablesDone = true;
+}
