@@ -35,7 +35,7 @@ const AUFBAU_TEXT = {
   'gleich (einer ruht)': 'gleich schwere Wagen, einer ruht',
   'gleich (gegeneinander)': 'gleich schwere Wagen fahren aufeinander zu',
 };
-const EXPECTED_RATIO = { 'leicht→schwer': 541 / 291, 'schwer→leicht': 291 / 541, 'gleich (einer ruht)': 1, 'gleich (gegeneinander)': 1 };
+const EXPECTED_RATIO = { 'leicht→schwer': 541.4 / 291.9, 'schwer→leicht': 291.9 / 541.4, 'gleich (einer ruht)': 1, 'gleich (gegeneinander)': 1 };
 
 // ===================== CSV =====================
 function parseCSV(text) {
@@ -271,7 +271,7 @@ $('sPlay').addEventListener('click', () => playSetup());
     ctx.setLineDash([4, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
     const plate2 = X(p.c2 - C / 2), plate1 = X(p.c1 + C / 2);
     ctx.beginPath(); ctx.moveTo(X(0) - 10, beam); ctx.lineTo(plate2, beam); ctx.moveTo(X(SIM.L) + 10, beam); ctx.lineTo(plate1, beam); ctx.stroke(); ctx.setLineDash([]);
-    const mt = (m, n) => ok(m) ? { s: Math.round(m * 1000) + ' g' + (run.ph ? ' (vorläufig)' : ''), miss: run.ph } : { s: `m${n} fehlt`, miss: true };
+    const mt = (m, n) => ok(m) ? { s: fmt(m * 1000, 1) + ' g' + (run.ph ? ' (vorläufig)' : ''), miss: run.ph } : { s: `m${n} fehlt`, miss: true };
     cart(p.c2, col2, 'W2', w2, mt(run.m2, '₂'), -1);
     cart(p.c1, col1, 'W1', w1, mt(run.m1, '₁'), 1);
     // Modell: nur im simulierten Zeitfenster
@@ -388,7 +388,7 @@ function renderTable() {
     <td>${r.id}</td><td>${r.aufbau}</td>
     <td>${fmt(r.v1)}</td><td>${fmt(r.v2)}</td><td>${fmt(r.u1)}</td><td>${fmt(r.u2)}</td>
     <td class="calc">${fmt(Math.max(r.e, 0), 2)}</td><td class="calc">${fmt(r.ratio, 2)}</td>
-    <td>${ok(r.m1) ? (r.ph ? `<span class="ph">${fmt(r.m1)}*</span>` : fmt(r.m1)) : missing}</td><td>${ok(r.m2) ? (r.ph ? `<span class="ph">${fmt(r.m2)}*</span>` : fmt(r.m2)) : missing}</td>
+    <td>${ok(r.m1) ? (r.ph ? `<span class="ph">${fmt(r.m1, 4)}*</span>` : fmt(r.m1, 4)) : missing}</td><td>${ok(r.m2) ? (r.ph ? `<span class="ph">${fmt(r.m2, 4)}*</span>` : fmt(r.m2, 4)) : missing}</td>
     <td class="calc">${fmt(r.p0)}</td><td class="calc">${fmt(r.p1)}</td><td class="calc">${fmt(r.dE, 1)}</td></tr>`).join('');
   }).join('');
   $('table').querySelectorAll('tbody tr[data-run]').forEach(tr => {
@@ -438,12 +438,14 @@ function renderDeriv() {
     ext.push({ x: tCut, y: raw.v2[iCut - 1] }, { x: Math.min(tCut + 0.06, raw.t[iEnd]), y: run.u2 }, { x: raw.t[iEnd], y: run.u2 });
   }
   const cut = { t: tCut, color: css('--muted'), text: css('--ink'), bg: css('--raised') };
-  const cutLbl = ['ab hier Wagen 2 < 20 cm vom Sensor: nicht gemessen'];
+  const cutLbl = ['Wagen 2 < 20 cm: nicht gemessen'];
+  $('cutNote').hidden = !(iCut > 0);
+  if (iCut > 0) $('cutNote').innerHTML = `<span><b>Gilt für alle drei Diagramme:</b> Ab der gestrichelten senkrechten Linie bei t = ${fmt(tCut, 2)} s ist Wagen 2 näher als 20 cm an seinem Sensor und wird nicht mehr gemessen. Deshalb enden dort seine Kurven in x(t), v(t) und a(t). In v(t) ist danach v₂′ aus dem Fit gestrichelt angenommen.</span>`;
   chart('chX', { type: 'scatter', data: { datasets: [pts('Wagen 1', raw.x1, c1), pts('Wagen 2', raw.x2, c2)] },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band, zone, cut }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m', 3), mark: band, zone, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('x in m', 2, { min: 0, max: 1.2, grace: 0 }) } } });
   legend('lgD', [[shapeSVG.line(c1), 'Wagen 1 (stossend)'], [shapeSVG.line(c2), 'Wagen 2 (gestossen)']].concat(ext.length ? [[shapeSVG.line(c2, true), 'Wagen 2 nicht gemessen, angenommen v₂′ aus Fit']] : []));
   chart('chV', { type: 'line', data: { datasets: [ln('Wagen 1', raw.v1, c1), ln('Wagen 2', raw.v2, c2)].concat(ext.length ? [{ label: 'Wagen 2 angenommen', data: ext, borderColor: c2, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, pointHoverRadius: 3 }] : []) },
-    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band, cut: { ...cut, label: cutLbl } }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
+    options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s', 3), mark: band, cut }, scales: { x: xs, y: yAx('v in m/s', 2) } } });
   chart('chA', { type: 'line', data: { datasets: [ln('Wagen 1', raw.a1, c1), ln('Wagen 2', raw.a2, c2)] },
     options: { ...common, plugins: { legend: { display: false }, tooltip: tip('m/s²', 2), mark: band, cut }, scales: { x: { ...xs, title: o.axisTitle('t in s') }, y: yAx('a in m/s²', 1) } } });
   // Kraftstoss pro Masse je Wagen: Fläche unter a(t) im Stoss gegen Δv aus den Fits
@@ -460,7 +462,7 @@ function renderDeriv() {
 const mk = $('mk'), mc = $('mc'), mm1 = $('mm1'), mm2 = $('mm2');
 function defaultMasses(run) {
   if (run.hasMass) return [run.m1, run.m2];
-  return { 'leicht→schwer': [0.291, 0.541], 'schwer→leicht': [0.541, 0.291] }[run.aufbau] || [0.291, 0.291];
+  return { 'leicht→schwer': [0.2919, 0.5414], 'schwer→leicht': [0.5414, 0.2919] }[run.aufbau] || [0.2919, 0.2919];
 }
 async function selectModelRun(id) {
   const run = RUNS.find(r => r.id === id); if (!run) return;
@@ -488,7 +490,7 @@ function simulate(run, raw, k, m1, m2, c = 0) {
 function renderModel() {
   const run = modelRun, raw = run && rawCache[run.id]; if (!raw) return;
   const k = +mk.value, c = +mc.value, m1 = +mm1.value, m2 = +mm2.value;
-  $('o_k').textContent = k; $('o_c').textContent = fmt(c, 1); $('o_mm1').textContent = fmt(m1, 3); $('o_mm2').textContent = fmt(m2, 3);
+  $('o_k').textContent = k; $('o_c').textContent = fmt(c, 1); $('o_mm1').textContent = fmt(m1, 4); $('o_mm2').textContent = fmt(m2, 4);
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2'), ink = css('--ink-2'), muted = css('--muted');
   const sim = simulate(run, raw, k, m1, m2, c), { out, t0, t1 } = sim;
   if (ani.run === run) { ani.model = sim; fillSetupFigures(); }
@@ -543,7 +545,7 @@ async function selectRun(id) {
   document.querySelectorAll('#viewDetail details[open]').forEach(d => { d.open = false; });
   const k = ORDER.indexOf(run), prev = ORDER[k - 1], next = ORDER[k + 1];
   $('dhTitle').textContent = `Stoss ${run.id}`;
-  $('dhInfo').innerHTML = `${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${Math.round(run.m1 * 1000)} g, m₂ = ${Math.round(run.m2 * 1000)} g${run.ph ? ' <span class="missing">(vorläufig)</span>' : ''}` : '<span class="missing">Massen fehlen noch</span>'}`;
+  $('dhInfo').innerHTML = `${run.T.label}, beide Wagen mit ${run.T.puffer}, ${AUFBAU_TEXT[run.aufbau] || run.aufbau}. ${run.hasMass ? `m₁ = ${fmt(run.m1 * 1000, 1)} g, m₂ = ${fmt(run.m2 * 1000, 1)} g${run.ph ? ' <span class="missing">(vorläufig)</span>' : ''}` : '<span class="missing">Massen fehlen noch</span>'}`;
   const nb = (b, r, txt) => { b.disabled = !r; b.textContent = r ? txt(r.id) : txt('').trim(); b.onclick = r ? () => { history.replaceState(null, '', '#m' + r.id); selectRun(r.id); } : null; };
   nb($('prevBtn'), prev, i => `‹ ${i}`); nb($('nextBtn'), next, i => `${i} ›`);
   const raw = await loadRaw(run); if (SEL !== run) return;

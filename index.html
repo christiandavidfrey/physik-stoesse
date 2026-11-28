@@ -186,6 +186,16 @@ html{scroll-padding-top:90px}
 .dhead-t b{font-size:20px}
 .dhead-t span{font-size:14px;color:var(--ink-2)}
 .dhead-nav{display:flex;gap:6px}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.photos figure{margin:0;min-width:0}
+.photos img{display:block;width:100%;height:auto;border-radius:6px;background:var(--band-deep)}
+.photos .big{grid-column:1 / -1}
+.photos .big img{aspect-ratio:2/1;object-fit:cover;object-position:50% 62%}
+.cutnote{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--ink-2);margin:8px 0 18px;padding:10px 14px;border-left:2px dashed var(--muted);background:var(--band-tint)}
+.cutnote b{color:var(--ink)}
+.photos figcaption{font-size:14px;color:var(--ink-2);margin-top:10px;line-height:1.45}
+.photos figcaption b{color:var(--ink)}
+@media (max-width:640px){.photos{grid-template-columns:1fr 1fr;gap:14px}.photos .last{grid-column:1 / -1}}
 .masthead{position:relative}
 .themetog{position:absolute;top:20px;right:24px}
 .dhead .themetog{position:static}
@@ -226,6 +236,19 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
 
 <main>
 <div id="viewOverview">
+
+<section id="versuchsaufbau" class="tint">
+  <div class="col">
+    <h2>Versuchsaufbau</h2>
+    <p class="lede">Zwei Wagen auf einer gemeinsamen Schiene, an jedem Ende ein Ultraschallsensor. Die Massen haben wir mit derselben Waage bestimmt.</p>
+  </div>
+  <figure class="wide"><div class="photos">
+    <figure class="big"><img src="img/messaufbau.jpg" width="1594" height="1200" loading="lazy" alt="Schiene mit zwei blauen Wagen, links mit Zusatzgewichten, die Heckplatten zeigen zu den Sensoren an den Schienenenden"><figcaption><b>Messaufbau.</b> Links ein Wagen mit zwei Zusatzgewichten, rechts ein Wagen ohne. Die Heckplatten reflektieren den Ultraschall der Sensoren an den Schienenenden; gemessen wird mit LoggerPro bei 200 Hz.</figcaption></figure>
+    <figure><img src="img/wagen-leicht.jpg" width="900" height="1195" loading="lazy" alt="Wagen ohne Zusatzgewicht auf der Waage, Anzeige 291,9 g"><figcaption><b>Wagen leicht: 291,9 g.</b> Ohne Zusatzgewicht.</figcaption></figure>
+    <figure><img src="img/wagen-schwer.jpg" width="900" height="1195" loading="lazy" alt="Wagen mit zwei Zusatzgewichten auf der Waage, Anzeige 541,4 g"><figcaption><b>Wagen schwer: 541,4 g.</b> Mit zwei Zusatzgewichten.</figcaption></figure>
+    <figure class="last"><img src="img/zusatzgewicht.jpg" width="900" height="1195" loading="lazy" alt="Ein Zusatzgewicht auf der Waage, Anzeige 125,2 g"><figcaption><b>Zusatzgewicht: 125,2 g.</b> Für die schweren Messungen immer zwei davon.</figcaption></figure>
+  </div></figure>
+</section>
 
 <section id="auswertung" class="dark">
   <div class="col">
@@ -325,6 +348,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <p class="sub" id="dSub" style="margin-top:0"></p>
     <div class="legend" id="lgD" style="margin-top:20px"></div>
     <div class="kpis" id="dFigures"></div>
+    <p class="cutnote" id="cutNote" hidden></p>
     <div class="stack">
       <div class="slabel">Ort x(t)</div><div class="box" style="height:240px"><canvas id="chX" role="img" aria-label="Ort beider Wagen gegen Zeit"></canvas></div>
       <div class="slabel">Geschwindigkeit v(t)</div><div class="box" style="height:210px"><canvas id="chV" role="img" aria-label="Geschwindigkeit beider Wagen gegen Zeit"></canvas></div>
@@ -345,7 +369,7 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
         <li>Keine Reibung, keine Kraft ausserhalb des Stosses, keine Schienenenden.</li>
         <li>Die reine Feder gibt alle Energie zurück, sagt also immer e = 1 voraus. Mit k = 1000 N/m dauert der Stoss nur Hundertstelsekunden, gemessen sind rund 0,2 s.</li>
         <li>Erweiterung, nicht im Original: eine Dämpfung c, die nur während der Stauchung bremst. Damit lassen sich Schaumstoff und Klett annähern.</li>
-        <li>Massen gewogen: leicht 291 g, schwer 541 g (291 g + 2 Zusatzgewichte à 125,2 g).</li>
+        <li>Massen gewogen: leicht 291,9 g, schwer 541,4 g (Wagen mit 2 Zusatzgewichten à 125,2 g).</li>
       </ul>
       <div class="formulas"><div class="f"><span>Bewegung</span><div class="formula" data-tex="m_1\ddot x_1 = F,\quad m_2\ddot x_2 = -F,\quad F = k\,\Delta + c\,\dot\Delta"></div></div></div>
     </details>
@@ -354,8 +378,8 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
     <div class="ctl">
       <label>Federkonstante k in N/m <output id="o_k"></output><input type="range" id="mk" min="10" max="1500" step="10" value="1000"></label>
       <label>Dämpfung c in N·s/m <output id="o_c"></output><input type="range" id="mc" min="0" max="20" step="0.5" value="0"></label>
-      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.05" max="0.8" step="0.001" value="0.291"></label>
-      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.05" max="0.8" step="0.001" value="0.541"></label>
+      <label>m₁ in kg <output id="o_mm1"></output><input type="range" id="mm1" min="0.05" max="0.8" step="0.0001" value="0.2919"></label>
+      <label>m₂ in kg <output id="o_mm2"></output><input type="range" id="mm2" min="0.05" max="0.8" step="0.0001" value="0.5414"></label>
     </div>
     <p class="note missing" id="modelMassNote">Massen angenommen (schwer ≈ 2 × leicht), bis die gewogenen Werte in der CSV stehen.</p>
     <p class="callout" id="modelE"></p>
