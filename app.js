@@ -574,6 +574,21 @@ fetch('data/messungen.csv').then(r => r.ok ? r.text() : Promise.reject(new Error
     console.error(err);
     $('massNote').innerHTML = '<b>Daten nicht geladen</b><span>Die Messdaten konnten nicht gelesen werden. Wird die Seite direkt vom Rechner geöffnet, bitte einen kleinen Webserver starten (siehe README).</span>';
   });
+// ===================== Fotogalerie =====================
+(function gallery() {
+  const g = document.querySelector('.gal'); if (!g) return;
+  const track = g.querySelector('.gal-track'), slides = [...track.children], thumbs = [...g.querySelectorAll('.gal-thumbs button')];
+  const prev = g.querySelector('.gal-prev'), next = g.querySelector('.gal-next');
+  const cur = () => Math.round(track.scrollLeft / (track.clientWidth + 16));
+  const go = i => { i = Math.max(0, Math.min(slides.length - 1, i)); track.scrollTo({ left: slides[i].offsetLeft - track.offsetLeft, behavior: reduceMotion ? 'auto' : 'smooth' }); };
+  const update = () => { const i = cur(); thumbs.forEach((t, k) => t.setAttribute('aria-current', k === i)); prev.disabled = i === 0; next.disabled = i === slides.length - 1; };
+  prev.addEventListener('click', () => go(cur() - 1)); next.addEventListener('click', () => go(cur() + 1));
+  thumbs.forEach((t, k) => t.addEventListener('click', () => go(k)));
+  track.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { e.preventDefault(); go(cur() + 1); } if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur() - 1); } });
+  let raf; track.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }, { passive: true });
+  update();
+})();
+
 // ===================== Hell/Dunkel-Schalter =====================
 const darkMQ = matchMedia('(prefers-color-scheme: dark)');
 const isDark = () => (document.documentElement.dataset.theme || (darkMQ.matches ? 'dark' : 'light')) === 'dark';
