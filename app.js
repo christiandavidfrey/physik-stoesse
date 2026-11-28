@@ -702,20 +702,20 @@ async function renderTables() {
     ['Nr.', 'Stossart', 'Aufbau', 'm₁ / g', 'm₂ / g', 'v₁', 'v₂', 'u₁', 'u₂'],
     runs.map(r => [...base(r), f(r.m1 * 1000, 1), f(r.m2 * 1000, 1), U(r, 'v1', r.v1), U(r, 'v2', r.v2), U(r, 'v1_nach', r.u1), U(r, 'v2_nach', r.u2)])));
   H.push(tbl('tB', 'Tabelle B: Impuls vor und nach dem Stoss', 'Gesamtimpuls in g·m/s.',
-    ['Nr.', 'Stossart', 'Aufbau', 'p vor', 'p nach', 'Δp', 'relativ'],
-    runs.map(r => [...base(r), f(r.p0 * 1000, 1), f(r.p1 * 1000, 1), f((r.p1 - r.p0) * 1000, 1), Math.abs(r.p0) > 0.03 ? pc((r.p1 - r.p0) / Math.abs(r.p0) * 100) : '(p ≈ 0)'])));
+    ['Nr.', 'Stossart', 'Aufbau', 'p vor', 'p nach'],
+    runs.map(r => [...base(r), f(r.p0 * 1000, 1), f(r.p1 * 1000, 1)])));
   H.push(tbl('tC', 'Tabelle C: Kinetische Energie vor und nach dem Stoss', 'Kinetische Energie beider Wagen in mJ.',
-    ['Nr.', 'Stossart', 'Aufbau', 'E vor', 'E nach', 'ΔE', 'relativ'],
-    runs.map(r => [...base(r), f(r.E0 * 1000, 1), f(r.E1 * 1000, 1), f((r.E1 - r.E0) * 1000, 1), pc(r.dE)])));
+    ['Nr.', 'Stossart', 'Aufbau', 'E vor', 'E nach'],
+    runs.map(r => [...base(r), f(r.E0 * 1000, 1), f(r.E1 * 1000, 1)])));
   H.push(tbl('tD', 'Tabelle D: Kraftstoss, Stossdauer und Kraft', 'Kraftstoss von Wagen 1 im Vergleich zur Impulsänderung aus den Fits.',
     ['Nr.', 'Stossart', 'Aufbau', '∫F₁ dt / N·s', 'Δp₁ / kg·m/s', 'Δt / s', 'F̄ / N', 'F_max / N'],
     runs.map(r => { const raw = raws[r.id], lo = Math.round(raw.lo / DT), hi = Math.round(raw.hi / DT);
       const area = a => { let J = 0; for (let j = lo; j < hi; j++) { if (a[j] === null || a[j + 1] === null) return NaN; J += (a[j] + a[j + 1]) / 2 * DT; } return J; };
       const J1 = r.m1 * area(raw.a1), J2 = r.m2 * area(raw.a2), d1 = r.m1 * (r.u1 - r.v1), d2 = r.m2 * (r.u2 - r.v2), dt = raw.hi - raw.lo;
       return [...base(r), f(J1), f(d1), f(dt, 2), f(Math.abs(d1) / dt, 2), f(Math.abs(r.m1 * raw.amax), 2)]; })));
-  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Geschwindigkeiten nach dem Stoss, gemessen und nach Theorie (elastisch bzw. inelastisch), in m/s.',
+  H.push(tbl('tE', 'Tabelle E: Vergleich mit der Theorie', 'Geschwindigkeiten nach dem Stoss, gemessen und nach Theorie, in m/s. Für den teilelastischen Stoss gibt es keine eindeutige Vorhersage, er fehlt hier.',
     ['Nr.', 'Stossart', 'Aufbau', 'u₁ gemessen', 'u₁ Theorie', 'u₂ gemessen', 'u₂ Theorie'],
-    runs.map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
+    runs.filter(r => r.T.key !== 'teilelastisch').map(r => { const M = r.m1 + r.m2, P = r.p0; let t1 = NaN, t2 = NaN;
       if (r.T.key === 'elastisch') { t1 = (P - r.m2 * (r.v1 - r.v2)) / M; t2 = (P + r.m1 * (r.v1 - r.v2)) / M; } else if (r.T.key === 'inelastisch') t1 = t2 = P / M;
       return [...base(r), U(r, 'v1_nach', r.u1), f(t1), U(r, 'v2_nach', r.u2), f(t2)]; }),
     'Inelastisch etwas langsamer als erwartet: Rollreibung zwischen Stoss und Fitfenster.'));
