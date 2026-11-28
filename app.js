@@ -153,12 +153,12 @@ let SIM_ON = true;
 try { SIM_ON = localStorage.getItem('simOn') !== '0'; } catch (e) {}
 function applySim() {
   document.body.classList.toggle('no-sim', !SIM_ON);
-  const b = $('simBtn'); b.setAttribute('aria-pressed', SIM_ON); b.textContent = 'Simulation: ' + (SIM_ON ? 'ein' : 'aus');
+  document.querySelectorAll('[data-sim]').forEach(b => { b.setAttribute('aria-pressed', SIM_ON); b.textContent = 'Simulation: ' + (SIM_ON ? 'ein' : 'aus'); });
 }
-$('simBtn').addEventListener('click', () => {
+document.querySelectorAll('[data-sim]').forEach(b => b.addEventListener('click', () => {
   SIM_ON = !SIM_ON; try { localStorage.setItem('simOn', SIM_ON ? '1' : '0'); } catch (e) {}
   applySim(); if (SIM_ON) renderModel();
-});
+}));
 applySim();
 
 // ===================== Versuchsaufbau: gewählte Messung abspielen =====================
