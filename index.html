@@ -116,6 +116,11 @@ canvas.track{display:block;width:100%;height:230px}
 .dlayout{display:grid;grid-template-columns:330px minmax(0,1fr);gap:40px}
 @media (max-width:900px){.dlayout{grid-template-columns:1fr}}
 .dside .kpis{grid-template-columns:1fr 1fr}
+.kpis-cyan{grid-template-columns:repeat(3,minmax(0,1fr));background:#00616D;border:0;gap:2px}
+@media (max-width:760px){.kpis-cyan{grid-template-columns:1fr}}
+.kpis-cyan .fig{background:#003840;border-top:3px solid var(--accent)}
+.kpis-cyan .fig div,.kpis-cyan .fig strong .u,.kpis-cyan .fig strong span{color:#9BDDE6}
+.kpis-cyan .fig strong{color:#E3F6F8}
 .dside .fig{padding-left:0}
 .stack{display:grid;gap:22px;margin-top:56px}
 .slabel{font-weight:700;font-size:14px;color:var(--ink-2)}
@@ -339,9 +344,9 @@ footer{width:100%;color:var(--muted);font-size:14px;padding:56px 0 96px}
       <button class="btn" data-speed="1" aria-pressed="true">Echtzeit</button>
       <button class="btn" data-speed="0.25" aria-pressed="false">Zeitlupe ¼</button>
       <button class="btn simtog" type="button" data-sim aria-pressed="true" style="margin-left:12px">Simulation: ein</button>
-      <span class="legend" style="margin:0 0 0 auto"><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="var(--ink)"/></svg>Messung</span><span class="sim-only"><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="none" stroke="var(--muted)" stroke-dasharray="3 2" stroke-width="1.4"/></svg>Federmodell</span></span>
+      <span class="legend" style="margin:0 0 0 auto"><span><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="var(--ink)"/></svg>Messung</span><span class="sim-only"><svg viewBox="0 0 16 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2" fill="none" stroke="var(--muted)" stroke-dasharray="3 2" stroke-width="1.4"/></svg>Simulation</span></span>
     </div>
-    <div class="kpis dark black">
+    <div class="kpis kpis-cyan">
       <div class="fig"><div>Wagen 1: v₁ → v₁′</div><strong id="r_v1"></strong></div>
       <div class="fig"><div>Wagen 2: v₂ → v₂′</div><strong id="r_v2"></strong></div>
       <div class="fig"><div>m₂/m₁ aus der Impulserhaltung</div><strong id="r_ratio"></strong></div>
