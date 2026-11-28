@@ -11,6 +11,7 @@ const fmt = (x, d = 3) => ok(x) ? (Math.round(x * 10 ** d) / 10 ** d).toFixed(d)
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const DT = 0.005;           // 200 Hz
 const X2_MIN = 0.199;       // Sensor 2 misst darunter nichts Sinnvolles
+const RAIL2 = 0.01, RAIL1 = 1.19;   // Schienenenden (Anschläge) in Sensorkoordinaten, aus dem Abprallen in Messung 1 geschätzt
 const X1_MAX = 1.021;       // Sensor 1 entsprechend: Wagen 1 näher als ~20 cm an Sensor 1 (Rohwert klebt bei 1,0226 m)
 const SMOOTH = 31;          // Fensterbreite für Ableitungen (31 Punkte = 0,15 s)
 
@@ -135,7 +136,7 @@ async function loadRaw(run) {
   for (let i = 0; i < x2f.length; i++) {
     if (x2[i] !== null) { last = x2[i]; lastV = v2[i] ?? lastV; continue; }
     if (last === null) continue;
-    last = Math.max(0.14, last + (ok(run.u2) ? Math.min(lastV, 0) || run.u2 : lastV) * DT); x2f[i] = last;
+    last = Math.max(RAIL2, last + (ok(run.u2) ? Math.min(lastV, 0) || run.u2 : lastV) * DT); x2f[i] = last;
   }
   // Lücke mitten in der Messung (Wagen fährt aus der Totzone wieder heraus, z. B. nach Abprallen am Schienenende):
   // vom Wiedereintritt rückwärts mit der dortigen Geschwindigkeit ergänzen, damit der Wagen nicht springt
@@ -149,9 +150,9 @@ async function loadRaw(run) {
       }
     }
   };
-  backfill(x2, x2f, v2, 1, 0.14);
+  backfill(x2, x2f, v2, 1, RAIL2);
   // x1 ebenso lückenlos: in der Totzone von Sensor 1 mit der letzten bzw. ersten gemessenen Geschwindigkeit
-  const X1_END = 1.08, x1f = x1.slice();
+  const X1_END = RAIL1, x1f = x1.slice();
   { let l = null, lv = 0;
     for (let i = 0; i < x1f.length; i++) {
       if (x1[i] !== null) { l = x1[i]; lv = v1[i] ?? lv; continue; }
@@ -161,7 +162,7 @@ async function loadRaw(run) {
     backfill(x1, x1f, v1, -1, X1_END);
     const j0 = x1f.findIndex(v => v !== null);
     if (j0 < 0) x1f.fill(1.0);
-    else { const w = j0 > 0 ? Math.min(0, v1[j0] ?? 0) : 0; for (let i = j0 - 1; i >= 0; i--) x1f[i] = Math.min(X1_END, x1f[i + 1] - w * DT); }
+    else { const w = j0 > 0 ? Math.min(0, v1[j0] ?? 0) : 0; for (let i = j0 - 1; i >= 0; i--) x1f[i] = Math.min(1.08, x1f[i + 1] - w * DT); }   // Startposition in der Totzone unbekannt, ~14 cm vor dem Sensor
   }
   const s1f = sg(x1f, SMOOTH, 0), v1f = sg(x1f, SMOOTH, 1);
   // Wagen 2 darf Wagen 1 nie durchdringen: Abstand der Messpunkte mindestens D.
@@ -525,27 +526,53 @@ async function selectModelRun(id) {
   if (run.ph) $('modelMassNote').textContent = 'Massen vorläufig (Platzhalter 100 g / 200 g), bis die gewogenen Werte in der CSV stehen.';
   await loadRaw(run); renderModel();
 }
-function simulate(run, raw, k, m1, m2, c = 0) {
-  const t0 = Math.max(0, run.tc - 0.5), t1 = raw.t[raw.t.length - 1], i0 = Math.round(t0 / DT);
+// Modellparameter je Stossart: k aus der gemessenen Stossdauer (Halbschwingung, 10-%-Schwelle ≈ 0,936·T/2),
+// elastisch reine Feder (Berkeley-Madonna-Modell), teilelastisch Feder + Dämpfung c passend zur gemessenen Stosszahl,
+// inelastisch Feder bis zur grössten Stauchung, danach kleben die Wagen (Klett) und fahren gemeinsam weiter.
+function modelParams(run, raw, m1, m2) {
+  const mu = m1 * m2 / (m1 + m2), dt = Math.max(0.05, raw.hi - raw.lo);
+  const k = mu * (0.936 * Math.PI / dt) ** 2;
+  const mode = run.T.key === 'inelastisch' ? 'stick' : 'spring';
+  let c = 0;
+  if (run.T.key === 'teilelastisch' && ok(run.e)) {
+    const target = Math.min(0.99, Math.max(0.01, run.e));
+    let lo = 0, hi = 4 * Math.sqrt(k * mu);
+    for (let it = 0; it < 22; it++) { const mid = (lo + hi) / 2; (simulate(run, raw, k, m1, m2, mid, 'spring', true).e > target) ? lo = mid : hi = mid; }
+    c = (lo + hi) / 2;
+  }
+  return { k, c, mode };
+}
+function simulate(run, raw, k, m1, m2, c = 0, mode = 'spring', quick = false) {
+  const t0 = Math.max(0, run.tc - 0.3), t1 = raw.t[raw.t.length - 1], i0 = Math.round(t0 / DT);
   const avg = (arr, i) => { let s = 0, n = 0; for (let j = i - 4; j <= i + 4; j++) if (arr[j] !== null && arr[j] !== undefined) { s += arr[j]; n++; } return s / n; };
   let x1 = avg(raw.x1f, i0), x2 = avg(raw.x2, i0), v1 = run.v1, v2 = run.v2;
   if (!ok(x2)) x2 = raw.x2f[i0];
   const h = 1e-4, every = Math.round(DT / h), out = [];
+  let stuck = false, touched = false, after = null;
   for (let s = 0, t = t0; t <= t1; s++, t += h) {
     // Feder F = k·Δ wie im Berkeley-Madonna-Modell; optional Dämpfung c·dΔ/dt (zieht nie, nur Druck)
-    const d = raw.D - (x1 - x2), F = d > 0 ? Math.max(0, k * d + c * (v2 - v1)) : 0;
-    if (s % every === 0) out.push({ t, x1, x2, E1: .5 * m1 * v1 * v1, E2: .5 * m2 * v2 * v2, Ef: d > 0 ? .5 * k * d * d : 0 });
+    const d = raw.D - (x1 - x2);
+    if (d > 0) touched = true;
+    if (mode === 'stick' && !stuck && d > 0 && v2 - v1 <= 0) { const v = (m1 * v1 + m2 * v2) / (m1 + m2); v1 = v2 = v; stuck = true; }
+    const F = stuck ? 0 : d > 0 ? Math.max(0, k * d + c * (v2 - v1)) : 0;
+    if (!quick && s % every === 0) out.push({ t, x1, x2, E1: .5 * m1 * v1 * v1, E2: .5 * m2 * v2 * v2, Ef: d > 0 && !stuck ? .5 * k * d * d : 0 });
     v1 += F / m1 * h; v2 -= F / m2 * h; x1 += v1 * h; x2 += v2 * h;   // semi-implizites Euler-Verfahren
+    if (!after && touched && (d <= 0 || stuck)) after = [v1, v2];
+    if (quick && after) break;   // für die Suche nach c reicht der Stoss selbst
+    // Schienenenden: Wagen bleibt am Anschlag stehen (zusammengeklebte Wagen beide)
+    if (x2 < RAIL2) { x2 = RAIL2; v2 = 0; if (stuck) v1 = 0; }
+    if (x1 > RAIL1) { x1 = RAIL1; v1 = 0; if (stuck) v2 = 0; }
   }
-  const e = -(v1 - v2) / (run.v1 - run.v2);   // Stosszahl, die das Modell am Ende liefert
-  return { out, t0, t1, e: Math.max(0, e), u1: v1, u2: v2 };
+  const [w1, w2] = after || [v1, v2];
+  const e = -(w1 - w2) / (run.v1 - run.v2);   // Stosszahl, die das Modell direkt nach dem Stoss liefert
+  return { out, t0, t1, e: Math.max(0, e), u1: w1, u2: w2 };
 }
 function renderModel() {
   const run = modelRun, raw = run && rawCache[run.id]; if (!raw) return;
-  const k = +mk.value, c = +mc.value, m1 = +mm1.value, m2 = +mm2.value;
-  $('o_k').textContent = k; $('o_c').textContent = fmt(c, 1); $('o_mm1').textContent = fmt(m1, 4); $('o_mm2').textContent = fmt(m2, 4);
+  const m1 = +mm1.value, m2 = +mm2.value, prm = modelParams(run, raw, m1, m2), k = prm.k, c = prm.c;
+  $('o_k').textContent = fmt(k, 0); $('o_c').textContent = fmt(c, 2); $('o_mm1').textContent = fmt(m1, 4); $('o_mm2').textContent = fmt(m2, 4);
   const o = baseOpts(), c1 = css('--ink'), c2 = css('--w2'), ink = css('--ink-2'), muted = css('--muted');
-  const sim = simulate(run, raw, k, m1, m2, c), { out, t0, t1 } = sim;
+  const sim = simulate(run, raw, k, m1, m2, c, prm.mode), { out, t0, t1 } = sim;
   if (ani.run === run) { ani.model = sim; fillSetupFigures(); }
   $('modelE').innerHTML = `Stosszahl gemessen <b>${fmt(Math.max(run.e, 0), 2)}</b>, im Modell <b>${fmt(sim.e, 2)}</b>. Endgeschwindigkeiten im Modell: v₁′ = ${fmt(sim.u1, 2)} m/s, v₂′ = ${fmt(sim.u2, 2)} m/s (gemessen ${fmt(run.u1, 2)} und ${fmt(run.u2, 2)} m/s).`;
   const meas = arr => arr.map((y, i) => (y === null || i % 2) ? null : { x: raw.t[i], y }).filter(Boolean);
